@@ -27,7 +27,8 @@ import com.example.ui.LodgeViewModel
 import com.example.ui.components.formatDateTime
 import com.example.ui.components.formatMoney
 import com.example.ui.theme.BlueAccent
-import com.example.ui.theme.GoldSecondary
+import com.example.ui.components.SmallThermalReceiptDialog
+import com.example.ui.components.BossInvoiceDialog
 import com.example.ui.theme.GreenVacant
 import com.example.ui.theme.RedOccupied
 
@@ -45,6 +46,8 @@ fun ReportsScreen(
     val searchQuery by viewModel.guestSearchQuery.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
+    var receiptBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var invoiceBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
 
     Column(
         modifier = modifier
@@ -80,24 +83,51 @@ fun ReportsScreen(
                         )
                     }
 
-                    FilledTonalIconButton(
-                        onClick = {
-                            val reportText = buildString {
-                                appendLine(if (isSwahili) "📋 RIPOTI YA LODGI" else "📋 LODGE REPORT")
-                                appendLine(if (isSwahili) "Mapato ya Leo: ${formatMoney(todayRevenue)}" else "Today's Revenue: ${formatMoney(todayRevenue)}")
-                                appendLine(if (isSwahili) "Jumla ya Mapato: ${formatMoney(totalRevenue)}" else "Total Revenue: ${formatMoney(totalRevenue)}")
-                                appendLine(if (isSwahili) "Idadi ya Wageni: ${allBookings.size}" else "Total Guests: ${allBookings.size}")
-                                appendLine(if (isSwahili) "Miamala ya Malipo: ${allPayments.size}" else "Total Transactions: ${allPayments.size}")
-                            }
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, reportText)
-                                type = "text/plain"
-                            }
-                            context.startActivity(Intent.createChooser(sendIntent, if (isSwahili) "Tuma Ripoti" else "Share Report"))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilledTonalButton(
+                            onClick = {
+                                val csvText = buildString {
+                                    appendLine("RIPOTI YA MAPATO YA LODGI - TOLEO LA EXCEL")
+                                    appendLine("Na,Tarehe ya Malipo,Mteja,Chumba,Kiasi (TZS),Njia ya Malipo")
+                                    allPayments.forEachIndexed { idx, p ->
+                                        appendLine("${idx + 1},${formatDateTime(p.paymentDate)},\"${p.guestName}\",#${p.roomNumber},${p.amount.toLong()},${p.paymentMethod}")
+                                    }
+                                    appendLine(",,,JUMLA KUU,${totalRevenue.toLong()},")
+                                }
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, csvText)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "Pakua / Shiriki Ripoti ya Excel"))
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Excel (CSV)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = if (isSwahili) "Tuma Ripoti" else "Share Report")
+
+                        FilledTonalIconButton(
+                            onClick = {
+                                val reportText = buildString {
+                                    appendLine(if (isSwahili) "📋 RIPOTI YA LODGI" else "📋 LODGE REPORT")
+                                    appendLine(if (isSwahili) "Mapato ya Leo: ${formatMoney(todayRevenue)}" else "Today's Revenue: ${formatMoney(todayRevenue)}")
+                                    appendLine(if (isSwahili) "Jumla ya Mapato: ${formatMoney(totalRevenue)}" else "Total Revenue: ${formatMoney(totalRevenue)}")
+                                    appendLine(if (isSwahili) "Idadi ya Wageni: ${allBookings.size}" else "Total Guests: ${allBookings.size}")
+                                    appendLine(if (isSwahili) "Miamala ya Malipo: ${allPayments.size}" else "Total Transactions: ${allPayments.size}")
+                                }
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, reportText)
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, if (isSwahili) "Tuma Ripoti" else "Share Report"))
+                            }
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = if (isSwahili) "Tuma Ripoti" else "Share Report")
+                        }
                     }
                 }
 
@@ -226,12 +256,43 @@ fun ReportsScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(allBookings) { booking ->
-                            GuestHistoryCard(booking = booking, isSwahili = isSwahili)
+                            GuestHistoryCard(
+                                booking = booking,
+                                isSwahili = isSwahili,
+                                onReceiptClick = { receiptBooking = booking },
+                                onInvoiceClick = { invoiceBooking = booking }
+                            )
                         }
                     }
                 }
             }
         }
+    }
+
+    // Small Thermal Receipt Dialog
+    if (receiptBooking != null) {
+        SmallThermalReceiptDialog(
+            booking = receiptBooking!!,
+            onDismiss = { receiptBooking = null },
+            onSwitchToBossInvoice = {
+                val b = receiptBooking
+                receiptBooking = null
+                invoiceBooking = b
+            }
+        )
+    }
+
+    // Boss Invoice Dialog
+    if (invoiceBooking != null) {
+        BossInvoiceDialog(
+            booking = invoiceBooking!!,
+            onDismiss = { invoiceBooking = null },
+            onSwitchToReceipt = {
+                val b = invoiceBooking
+                invoiceBooking = null
+                receiptBooking = b
+            }
+        )
     }
 }
 
@@ -313,7 +374,9 @@ fun PaymentHistoryCard(
 @Composable
 fun GuestHistoryCard(
     booking: GuestBookingEntity,
-    isSwahili: Boolean
+    isSwahili: Boolean,
+    onReceiptClick: () -> Unit,
+    onInvoiceClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -377,6 +440,35 @@ fun GuestHistoryCard(
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = onReceiptClick,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Risiti Ndogo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                FilledTonalButton(
+                    onClick = onInvoiceClick,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Invoice ya Boss", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

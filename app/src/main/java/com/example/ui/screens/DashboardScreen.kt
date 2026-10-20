@@ -35,6 +35,9 @@ import com.example.ui.theme.GreenVacant
 import com.example.ui.theme.OrangeCleaning
 import com.example.ui.theme.RedOccupied
 
+import com.example.ui.components.SmallThermalReceiptDialog
+import com.example.ui.components.BossInvoiceDialog
+
 @Composable
 fun DashboardScreen(
     viewModel: LodgeViewModel,
@@ -55,6 +58,8 @@ fun DashboardScreen(
     val occupancyRate = if (totalRooms > 0) ((occupiedRooms.toDouble() / totalRooms) * 100).toInt() else 0
 
     var guestForCheckOut by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var receiptBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var invoiceBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
 
     LazyColumn(
         modifier = modifier
@@ -362,10 +367,38 @@ fun DashboardScreen(
                 ActiveGuestCard(
                     booking = booking,
                     isSwahili = isSwahili,
+                    onReceiptClick = { receiptBooking = booking },
+                    onInvoiceClick = { invoiceBooking = booking },
                     onCheckOutClick = { guestForCheckOut = booking }
                 )
             }
         }
+    }
+
+    // Small Thermal Receipt Dialog
+    if (receiptBooking != null) {
+        SmallThermalReceiptDialog(
+            booking = receiptBooking!!,
+            onDismiss = { receiptBooking = null },
+            onSwitchToBossInvoice = {
+                val b = receiptBooking
+                receiptBooking = null
+                invoiceBooking = b
+            }
+        )
+    }
+
+    // Boss Invoice Dialog
+    if (invoiceBooking != null) {
+        BossInvoiceDialog(
+            booking = invoiceBooking!!,
+            onDismiss = { invoiceBooking = null },
+            onSwitchToReceipt = {
+                val b = invoiceBooking
+                invoiceBooking = null
+                receiptBooking = b
+            }
+        )
     }
 
     // Checkout Confirmation Dialog
@@ -486,6 +519,8 @@ fun RoomMiniCard(
 fun ActiveGuestCard(
     booking: GuestBookingEntity,
     isSwahili: Boolean,
+    onReceiptClick: () -> Unit,
+    onInvoiceClick: () -> Unit,
     onCheckOutClick: () -> Unit
 ) {
     val balance = booking.totalAmount - booking.amountPaid
@@ -614,23 +649,57 @@ fun ActiveGuestCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                FilledTonalButton(
+                    onClick = onReceiptClick,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Receipt,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Risiti", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                FilledTonalButton(
+                    onClick = onInvoiceClick,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Description,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Invoice", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
                 OutlinedButton(
                     onClick = onCheckOutClick,
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = RedOccupied
                     ),
-                    modifier = Modifier.testTag("checkout_button_${booking.id}")
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .testTag("checkout_button_${booking.id}"),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.ExitToApp,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isSwahili) "Check-Out" else "Check-Out", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(if (isSwahili) "Check-Out" else "Check-Out", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

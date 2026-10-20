@@ -8,79 +8,155 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for Real Interactive Graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS for Real Excel (.xlsx) Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
         }
         .active-tab {
             border-bottom: 3px solid #1e40af;
             color: #1e40af;
             font-weight: 700;
         }
+        .font-mono-receipt {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* THERMAL RECEIPT (80mm / SMALL SLIP - SIO A4) */
+        .thermal-receipt-paper {
+            width: 320px;
+            max-width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            position: relative;
+        }
+        .thermal-receipt-paper::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+            background-size: 16px 16px;
+        }
+
+        /* EXECUTIVE INVOICE YA BOSS (A4 / FORMAL LUXURY STATEMENT) */
+        .boss-invoice-paper {
+            max-width: 750px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* PRINT STYLES */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .printable-section, .printable-section * {
+                visibility: visible;
+            }
+            .printable-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
-<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
 
-    <!-- Top Notification & Download Bar -->
-    <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-3 shadow-md">
-        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="flex items-center space-x-2">
-                <span class="bg-amber-500 text-slate-900 text-xs font-black px-2.5 py-0.5 rounded-full uppercase">Kipakuzi / Download</span>
-                <span class="text-sm font-medium">Bofya hapa kupakua mafaili yako ya Streamlit moja kwa moja:</span>
+    <!-- Top Announcement Bar -->
+    <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white px-4 py-2.5 shadow-md no-print">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5">
+            <div class="flex items-center space-x-2 text-xs">
+                <span class="bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider text-[10px]">Toleo la Kibiashara</span>
+                <span id="topBarLodgeName" class="font-bold text-slate-100">JINA LA LODGI YAKO</span>
+                <span class="text-slate-400">|</span>
+                <span id="topBarPhone" class="text-slate-300"><i class="fa-solid fa-phone text-xs"></i> 07XXXXXXXX</span>
             </div>
             <div class="flex items-center space-x-2">
-                <a href="app.py" download="app.py" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer no-underline">
-                    <i class="fa-solid fa-download"></i> Pakua app.py (Direct)
-                </a>
-                <a href="requirements.txt" download="requirements.txt" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer no-underline">
-                    <i class="fa-solid fa-file-arrow-down"></i> Pakua requirements.txt (Direct)
-                </a>
+                <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow">
+                    <i class="fa-solid fa-file-excel"></i> Ripoti ya Excel (.xlsx)
+                </button>
+                <button onclick="openModal('businessSettingsModal')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-sliders"></i> Mipangilio & Logo
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Main Navigation Bar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm no-print">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-700 flex items-center justify-center text-white text-xl shadow-md">
-                        <i class="fa-solid fa-hotel"></i>
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('dashboard')">
+                    <div id="headerLogoContainer" class="w-11 h-11 rounded-xl bg-blue-700 flex items-center justify-center text-white text-xl shadow-md overflow-hidden">
+                        <i class="fa-solid fa-hotel" id="headerLogoDefaultIcon"></i>
+                        <img id="headerLogoImg" src="" alt="Logo" class="w-full h-full object-cover hidden">
                     </div>
                     <div>
-                        <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">LODGE MANAGER</h1>
-                        <p class="text-xs text-slate-500 font-medium">Mfumo wa Kisasa wa Usimamizi wa Lodgi</p>
+                        <h1 id="headerLodgeName" class="text-lg font-black text-slate-900 tracking-tight leading-tight">JINA LA LODGI YAKO</h1>
+                        <p id="headerLodgeSlogan" class="text-xs text-slate-500 font-medium">Ukarimu, Utulivu na Usalama Masaa 24</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <span id="currentDate" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200"></span>
+
+                <div class="flex items-center space-x-3">
+                    <button onclick="exportToExcel()" class="hidden md:flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition cursor-pointer">
+                        <i class="fa-solid fa-file-excel text-emerald-600"></i> Pakua Excel
+                    </button>
+                    <span id="currentDate" class="text-xs font-semibold text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200"></span>
                 </div>
             </div>
 
             <!-- Navigation Tabs -->
-            <div class="flex space-x-4 sm:space-x-8 border-t border-slate-100 overflow-x-auto text-sm font-medium text-slate-600">
+            <div class="flex space-x-3 sm:space-x-8 border-t border-slate-100 overflow-x-auto text-sm font-medium text-slate-600">
                 <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-1 active-tab flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-chart-pie"></i> Dashboard ya Muhtasari
+                    <i class="fa-solid fa-chart-pie"></i> Dashibodi & Grafu
                 </button>
                 <button onclick="switchTab('rooms')" id="tab-rooms" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-door-open"></i> Usimamizi wa Vyumba
+                    <i class="fa-solid fa-door-open"></i> Vyumba
                 </button>
                 <button onclick="switchTab('checkin')" id="tab-checkin" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-user-check"></i> Usajili (Check-In / Out)
+                    <i class="fa-solid fa-user-plus"></i> Usajili (Check-In / Out)
+                </button>
+                <button onclick="switchTab('staff')" id="tab-staff" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-user-clock"></i> Waajiriwa & Shift
                 </button>
                 <button onclick="switchTab('reports')" id="tab-reports" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> Ripoti na Malipo
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Ripoti ya Hela & Invoice
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- App Container -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1">
 
-        <!-- 1. DASHBOARD YA MUHTASARI -->
+        <!-- 1. DASHBOARD & INTERACTIVE GRAPHS -->
         <section id="sec-dashboard" class="space-y-6">
             <!-- Metric Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -88,7 +164,7 @@
                     <div>
                         <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Vyumba Vyote</p>
                         <h3 id="statTotalRooms" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
-                        <p class="text-xs text-slate-500 mt-1">Jumla ya vyumba vya lodgi</p>
+                        <p class="text-xs text-slate-500 mt-1">Uwezo wa jumla wa lodgi</p>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
                         <i class="fa-solid fa-bed"></i>
@@ -120,11 +196,43 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                     <div>
                         <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Mapato ya Leo</p>
-                        <h3 id="statTodayRevenue" class="text-2xl font-extrabold text-slate-900 mt-1">TZS 0/=</h3>
-                        <p class="text-xs text-slate-500 mt-1">Mkusanyiko wa siku ya leo</p>
+                        <h3 id="statTodayRevenue" class="text-2xl font-black text-slate-900 mt-1">TZS 0/=</h3>
+                        <p class="text-xs text-slate-500 mt-1">Mkusanyiko wa siku</p>
                     </div>
                     <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
                         <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REAL CHARTS SECTION -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Bar Chart: Mapato ya Siku 7 -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-blue-600"></i> Grafu ya Mapato ya Siku 7 Zilizopita (TZS)
+                            </h2>
+                            <p class="text-xs text-slate-500">Mwelekeo wa mauzo ya kila siku</p>
+                        </div>
+                        <button onclick="exportToExcel()" class="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition flex items-center gap-1">
+                            <i class="fa-solid fa-download"></i> Excel
+                        </button>
+                    </div>
+                    <div class="relative h-[260px] w-full">
+                        <canvas id="revenueTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Doughnut Chart: Njia za Malipo -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-indigo-600"></i> Njia za Malipo Zilizotumika
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-3">M-Pesa, Tigo Pesa, Cash, Benki</p>
+                    <div class="relative h-[220px] w-full flex items-center justify-center">
+                        <canvas id="paymentMethodsChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -137,20 +245,20 @@
                         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
                             <i class="fa-solid fa-table-cells-large text-blue-600"></i> Hali ya Vyumba kwa Haraka
                         </h2>
-                        <button onclick="switchTab('rooms')" class="text-xs font-semibold text-blue-600 hover:underline">Tazama Vyote &rarr;</button>
+                        <button onclick="switchTab('rooms')" class="text-xs font-semibold text-blue-600 hover:underline">Vyumba Vyote &rarr;</button>
                     </div>
                     <div id="quickRoomsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         <!-- Populated by JS -->
                     </div>
                 </div>
 
-                <!-- Active Guests Card -->
+                <!-- Active Guests Quick Card -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
                             <i class="fa-solid fa-users text-indigo-600"></i> Wageni Waliopo Ndani
                         </h2>
-                        <button onclick="switchTab('checkin')" class="text-xs font-semibold text-blue-600 hover:underline">+ Sajili Mpya</button>
+                        <button onclick="switchTab('checkin')" class="text-xs font-semibold text-blue-600 hover:underline">+ Sajili Mteja</button>
                     </div>
                     <div id="quickActiveGuestsList" class="space-y-3 overflow-y-auto max-h-[360px]">
                         <!-- Populated by JS -->
@@ -164,15 +272,14 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Orodha ya Vyumba vya Lodgi</h2>
-                        <p class="text-xs text-slate-500">Dhibiti na usimamie hali ya vyumba, bei kwa siku, na aina.</p>
+                        <h2 class="text-lg font-bold text-slate-900">Usimamizi wa Vyumba vya Lodgi</h2>
+                        <p class="text-xs text-slate-500">Ongeza vyumba vipya, weka bei kwa siku na badili hali ya chumba.</p>
                     </div>
                     <button onclick="openModal('addRoomModal')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-plus"></i> Ongeza Chumba Kipya
                     </button>
                 </div>
 
-                <!-- Rooms Table -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
                         <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
@@ -180,9 +287,9 @@
                                 <th class="p-3.5">Namba</th>
                                 <th class="p-3.5">Aina ya Chumba</th>
                                 <th class="p-3.5">Bei kwa Siku</th>
-                                <th class="p-3.5">Ghorofa / Sakafu</th>
+                                <th class="p-3.5">Ghorofa</th>
                                 <th class="p-3.5">Vifaa / Huduma</th>
-                                <th class="p-3.5">Hali ya Sasa</th>
+                                <th class="p-3.5">Hali ya Chumba</th>
                                 <th class="p-3.5 text-right">Kitendo</th>
                             </tr>
                         </thead>
@@ -200,14 +307,14 @@
                 <!-- Check-in Form -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-user-plus text-blue-600"></i> Fomu ya Kusajili Mteja (Check-In)
+                        <i class="fa-solid fa-user-plus text-blue-600"></i> Fomu Kamili ya Usajili wa Mteja (Check-In)
                     </h2>
-                    <p class="text-xs text-slate-500 mb-5">Mteja akisajiliwa, chumba kitabadilishwa moja kwa moja kuwa 'Kimechukuliwa'.</p>
+                    <p class="text-xs text-slate-500 mb-5">Jaza taarifa zote zikiwemo Anakotoka na Anakokwenda ili kutoa risiti ndogo, invoice ya boss na ripoti.</p>
 
                     <form id="checkInForm" onsubmit="handleCheckIn(event)" class="space-y-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jina Kamili la Mteja *</label>
-                            <input type="text" id="ciGuestName" required placeholder="mf. Juma Bakari Mwalimu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <input type="text" id="ciGuestName" required placeholder="mfano: Rashid Ally Mwambapa" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -216,94 +323,203 @@
                                 <input type="tel" id="ciPhone" required placeholder="07XXXXXXXX" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kitambulisho / NIDA *</label>
-                                <input type="text" id="ciIdNumber" required placeholder="NIDA au Pasipoti" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kitambulisho (NIDA / Pasipoti) *</label>
+                                <input type="text" id="ciIdNumber" required placeholder="Namba ya NIDA au Leseni" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Chagua Chumba Kilicho Wazi *</label>
-                            <select id="ciRoomSelect" onchange="calculateCheckInCost()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-                                <!-- Populated by JS -->
-                            </select>
+                        <!-- ANAKOTOKA NA ANAKOKWENDA -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-50/60 p-3.5 rounded-xl border border-blue-100">
+                            <div>
+                                <label class="block text-xs font-bold text-blue-900 uppercase mb-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-location-arrow text-blue-600"></i> Anakotoka (Origin) *
+                                </label>
+                                <input type="text" id="ciOrigin" required placeholder="mf. Dar es Salaam, Mwanza..." class="w-full px-3 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-blue-900 uppercase mb-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-map-pin text-blue-600"></i> Anakokwenda (Destination) *
+                                </label>
+                                <input type="text" id="ciDestination" required placeholder="mf. Dodoma, Zanzibar, Arusha..." class="w-full px-3 py-2 rounded-lg border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                            </div>
                         </div>
 
+                        <!-- CHUMBA & MUDA WA KUKAA -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Idadi ya Siku</label>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Chagua Chumba Kilicho Wazi *</label>
+                                <select id="ciRoomSelect" onchange="calculateCheckInCost()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Muda Anaokaa (Idadi ya Siku) *</label>
                                 <input type="number" id="ciDays" min="1" value="1" onchange="calculateCheckInCost()" onkeyup="calculateCheckInCost()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             </div>
+                        </div>
+
+                        <!-- GHARAMA & MALIPO -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumla ya Gharama</label>
-                                <input type="text" id="ciTotalCost" readonly class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-blue-700 text-sm">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumla ya Bei ya Chumba</label>
+                                <input type="text" id="ciTotalCost" readonly class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 font-extrabold text-blue-800 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kiasi Kilicholipwa *</label>
+                                <input type="number" id="ciAmountPaid" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-emerald-700">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kiasi Kilicholipwa *</label>
-                                <input type="number" id="ciAmountPaid" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold">
-                            </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Njia ya Malipo</label>
                                 <select id="ciPaymentMethod" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-                                    <option value="Cash (Pesa Taslimu)">Cash (Pesa Taslimu)</option>
                                     <option value="M-Pesa">M-Pesa</option>
                                     <option value="Tigo Pesa">Tigo Pesa</option>
                                     <option value="Airtel Money">Airtel Money</option>
+                                    <option value="Cash (Taslimu)">Cash (Pesa Taslimu)</option>
                                     <option value="HaloPesa">HaloPesa</option>
                                     <option value="Benki / Kadi">Benki / Kadi</option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Mhudumu Aliyempokea</label>
+                                <select id="ciStaffSelect" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                    <!-- Populated from Staff -->
+                                </select>
+                            </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer mt-2">
-                            <i class="fa-solid fa-check"></i> Kamilisha Usajili (Check-In)
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer mt-3 text-sm">
+                            <i class="fa-solid fa-receipt"></i> Sajili Mteja & Toa Risiti
                         </button>
                     </form>
                 </div>
 
-                <!-- Active Guests & Check-Out Management -->
+                <!-- Active Guests & Actions -->
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-                        <i class="fa-solid fa-door-closed text-red-600"></i> Wageni Waliopo Ndani & Check-Out
+                        <i class="fa-solid fa-door-closed text-red-600"></i> Wageni Waliopo Ndani & Malipo
                     </h2>
-                    <p class="text-xs text-slate-500 mb-4">Bonyeza 'Check-Out' mteja anapoondoka ili chumba kirudi kuwa wazi.</p>
+                    <p class="text-xs text-slate-500 mb-4">Toa Risiti Ndogo ya mashine, Invoice ya Boss au fanya Check-Out mteja akiondoka.</p>
 
-                    <div id="activeGuestsFullList" class="space-y-3 overflow-y-auto max-h-[500px]">
+                    <div id="activeGuestsFullList" class="space-y-3 overflow-y-auto max-h-[550px]">
                         <!-- Populated by JS -->
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 4. RIPOTI NA MALIPO -->
+        <!-- 4. WAAJIRIWA NA SHIFT ZA WAHUDUMU -->
+        <section id="sec-staff" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-user-group text-blue-600"></i> Usimamizi wa Waajiriwa na Shift za Wahudumu
+                        </h2>
+                        <p class="text-xs text-slate-500">Panga ratiba ya wahudumu (Asubuhi, Mchana na Usiku) na mawasiliano yao.</p>
+                    </div>
+                    <button onclick="openModal('addStaffModal')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-user-plus"></i> Ongeza Mhudumu Mpya
+                    </button>
+                </div>
+
+                <!-- Shift Overview Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/70">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-amber-900 uppercase">Shift ya Asubuhi</span>
+                            <span class="text-[11px] bg-amber-200 text-amber-800 font-bold px-2 py-0.5 rounded-full">06:00 - 14:00</span>
+                        </div>
+                        <h4 id="countMorningShift" class="text-2xl font-black text-amber-950">0 Wahudumu</h4>
+                        <p class="text-xs text-amber-800/80 mt-1">Usafi, chai ya asubuhi na mapokezi</p>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-blue-200 bg-blue-50/70">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-blue-900 uppercase">Shift ya Mchana / Jioni</span>
+                            <span class="text-[11px] bg-blue-200 text-blue-800 font-bold px-2 py-0.5 rounded-full">14:00 - 22:00</span>
+                        </div>
+                        <h4 id="countAfternoonShift" class="text-2xl font-black text-blue-950">0 Wahudumu</h4>
+                        <p class="text-xs text-blue-800/80 mt-1">Check-in za jioni na huduma za vyumba</p>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/70">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-indigo-900 uppercase">Shift ya Usiku</span>
+                            <span class="text-[11px] bg-indigo-200 text-indigo-800 font-bold px-2 py-0.5 rounded-full">22:00 - 06:00</span>
+                        </div>
+                        <h4 id="countNightShift" class="text-2xl font-black text-indigo-950">0 Wahudumu</h4>
+                        <p class="text-xs text-indigo-800/80 mt-1">Ulinzi na dharura za usiku</p>
+                    </div>
+                </div>
+
+                <!-- Staff Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">Jina la Mhudumu</th>
+                                <th class="p-3.5">Namba ya Simu</th>
+                                <th class="p-3.5">Wadhifa (Role)</th>
+                                <th class="p-3.5">Shift ya Kazi</th>
+                                <th class="p-3.5">Hali ya Sasa</th>
+                                <th class="p-3.5 text-right">Kitendo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. RIPOTI YA HELA & INVOICE ZA BOSS -->
         <section id="sec-reports" class="hidden space-y-6">
+            <!-- Top Controls & Excel Export Banner -->
+            <div class="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <span class="bg-emerald-400 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Ripoti ya Fedha & Excel</span>
+                    <h2 class="text-xl font-black mt-2">Ripoti ya Mauzo & Hati za Malipo (Invoices)</h2>
+                    <p class="text-xs text-emerald-100 mt-1">Toa Invoice rasmi ya Boss au pakua ripoti kamili ya wateja na mapato kwenye Microsoft Excel.</p>
+                </div>
+                <button onclick="exportToExcel()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm px-5 py-3 rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer whitespace-nowrap">
+                    <i class="fa-solid fa-file-excel text-lg"></i> Pakua Kwenye Excel (.xlsx)
+                </button>
+            </div>
+
             <!-- Revenue Stats Summary -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-5 rounded-2xl shadow-sm">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumla ya Mapato Yote</p>
-                    <h3 id="repTotalRevenue" class="text-2xl font-black mt-2">TZS 0/=</h3>
-                    <p class="text-xs text-blue-200 mt-1">Mkusanyiko kamili wa fedha</p>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Jumla ya Mapato Yote</p>
+                    <h3 id="repTotalRevenue" class="text-3xl font-black text-slate-900 mt-2">TZS 0/=</h3>
+                    <p class="text-xs text-slate-500 mt-1">Mkusanyiko kamili wa fedha</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Miamala ya Malipo</p>
-                    <h3 id="repTotalTransactions" class="text-2xl font-bold text-slate-900 mt-2">0</h3>
+                    <h3 id="repTotalTransactions" class="text-3xl font-black text-blue-700 mt-2">0</h3>
                     <p class="text-xs text-slate-500 mt-1">Jumla ya risiti zilizotolewa</p>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jumla ya Wageni Waliosajiliwa</p>
-                    <h3 id="repTotalBookings" class="text-2xl font-bold text-slate-900 mt-2">0</h3>
-                    <p class="text-xs text-slate-500 mt-1">Historia ya wateja wote</p>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jumla ya Wageni</p>
+                    <h3 id="repTotalBookings" class="text-3xl font-black text-indigo-700 mt-2">0</h3>
+                    <p class="text-xs text-slate-500 mt-1">Wateja waliosajiliwa</p>
                 </div>
             </div>
 
-            <!-- Payments History Table -->
+            <!-- Payments History Table with Receipt & Boss Invoice Actions -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                     <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-receipt text-emerald-600"></i> Historia ya Miamala ya Malipo
+                        <i class="fa-solid fa-file-invoice text-blue-700"></i> Kumbukumbu ya Malipo, Risiti Ndogo & Invoice ya Boss
                     </h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportToExcel()" class="text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-excel text-emerald-600"></i> Export Excel (.xlsx)
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
@@ -312,8 +528,11 @@
                                 <th class="p-3">Tarehe</th>
                                 <th class="p-3">Jina la Mteja</th>
                                 <th class="p-3">Chumba</th>
+                                <th class="p-3">Safari</th>
                                 <th class="p-3">Kiasi</th>
-                                <th class="p-3">Njia ya Malipo</th>
+                                <th class="p-3">Njia</th>
+                                <th class="p-3">Mhudumu</th>
+                                <th class="p-3 text-right">Toa Hati</th>
                             </tr>
                         </thead>
                         <tbody id="paymentsTableBody" class="divide-y divide-slate-100">
@@ -326,24 +545,423 @@
 
     </main>
 
-    <!-- Modal: Ongeza Chumba Kipya -->
-    <div id="addRoomModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <!-- FOOTER WITH REAL OFFICE CONTACTS -->
+    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Lodge Profile -->
+                <div class="md:col-span-2 space-y-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white text-lg font-black shadow">
+                            <i class="fa-solid fa-hotel"></i>
+                        </div>
+                        <div>
+                            <h3 id="footerLodgeName" class="text-base font-black text-white tracking-wide">JINA LA LODGI YAKO</h3>
+                            <p id="footerLodgeSlogan" class="text-xs text-slate-400">Ukarimu, Utulivu na Usalama Masaa 24</p>
+                        </div>
+                    </div>
+                    <p id="footerAbout" class="text-xs text-slate-400 leading-relaxed pr-6">
+                        Tunatoa huduma bora za malazi, vyumba safi vyenye kiyoyozi, WiFi ya bure, usalama wa uhakika, na chakula/chai ya asubuhi kwa wateja wetu wote.
+                    </p>
+                    <div class="pt-2">
+                        <button onclick="openModal('businessSettingsModal')" class="text-xs text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-pen-to-square"></i> Badilisha Taarifa za Mawasiliano ya Ofisi Hapa
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contact Info Section -->
+                <div>
+                    <h4 class="text-xs font-extrabold uppercase text-white tracking-wider mb-4 border-b border-slate-800 pb-2">Mawasiliano ya Ofisi</h4>
+                    <ul class="space-y-2.5 text-xs text-slate-300">
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-phone text-blue-400 w-4"></i>
+                            <span id="footerPhone">07XXXXXXXX</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-brands fa-whatsapp text-emerald-400 w-4"></i>
+                            <span id="footerWhatsapp">+255 7XX XXX XXX</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fa-solid fa-envelope text-amber-400 w-4"></i>
+                            <span id="footerEmail">info@lodgemanager.co.tz</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fa-solid fa-location-dot text-rose-400 w-4 mt-0.5"></i>
+                            <span id="footerAddress">Mtaa wa Posta, Mkoani, Tanzania</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Hours & TIN Info -->
+                <div>
+                    <h4 class="text-xs font-extrabold uppercase text-white tracking-wider mb-4 border-b border-slate-800 pb-2">Huduma & Usalama</h4>
+                    <ul class="space-y-2 text-xs text-slate-300">
+                        <li class="flex items-center gap-2 text-emerald-400 font-semibold">
+                            <i class="fa-solid fa-clock"></i> Huduma: Masaa 24/7 (Siku Zote)
+                        </li>
+                        <li class="flex items-center gap-2 text-slate-400">
+                            <i class="fa-solid fa-shield-halved"></i> Ulinzi & CCTV Camera
+                        </li>
+                        <li class="flex items-center gap-2 text-slate-400">
+                            <i class="fa-solid fa-id-card"></i> TIN: <span id="footerTin" class="text-slate-300 font-mono">100-000-000</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 mt-8 pt-5 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500">
+                <p>&copy; 2026 <span id="footerCopyName">JINA LA LODGI YAKO</span>. Haki Zote Zimehifadhiwa.</p>
+                <p>Ripoti ya Excel &bull; Grafu za Mapato &bull; Risiti Ndogo ya TRA &bull; Invoice ya Boss</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: MIPANGILIO YA OFISI, LOGO & BUTTON YA KUFUTA DATA ZOTE (FOR BUYERS) -->
+    <div id="businessSettingsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-blue-600"></i> Mipangilio ya Ofisi & Logo ya Lodgi
+                </h3>
+                <button onclick="closeModal('businessSettingsModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <form id="businessSettingsForm" onsubmit="handleSaveBusinessSettings(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jina Kamili la Lodgi / Hoteli *</label>
+                    <input type="text" id="setLodgeName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kaulimbiu / Slogan</label>
+                    <input type="text" id="setLodgeSlogan" placeholder="mf. Ukarimu na Utulivu wa Hali ya Juu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm">
+                </div>
+
+                <!-- Logo Section -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Logo / Nembo ya Ofisi</label>
+                    <div class="flex items-center gap-3">
+                        <div id="settingsLogoPreview" class="w-12 h-12 rounded-xl bg-blue-700 text-white flex items-center justify-center font-bold text-lg overflow-hidden border border-slate-300">
+                            <i class="fa-solid fa-hotel"></i>
+                        </div>
+                        <div class="flex-1">
+                            <input type="file" id="setLogoFile" accept="image/*" onchange="previewLogo(event)" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-[10px] text-slate-400 mt-1">Pakia picha ya nembo (JPG au PNG) itakayotokea kwenye header, risiti na invoice ya boss.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya Simu Kuu *</label>
+                        <input type="text" id="setPhone" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya WhatsApp</label>
+                        <input type="text" id="setWhatsapp" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Barua Pepe (Email)</label>
+                        <input type="email" id="setEmail" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya TIN (ya TRA)</label>
+                        <input type="text" id="setTin" placeholder="102-345-678" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Anuani / Eneo Ilipo *</label>
+                    <input type="text" id="setAddress" required placeholder="mf. Mtaa wa Posta, Mkoani, TZ" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm">
+                </div>
+
+                <!-- DANGER ZONE: RESET / CLEAR DATA FOR SELLING TO CLIENT -->
+                <div class="p-3.5 rounded-xl border border-red-200 bg-red-50/70 space-y-2">
+                    <h4 class="text-xs font-extrabold text-red-900 uppercase flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-red-600"></i> Sehemu ya Kuuza kwa Wateja (Fresh Start)
+                    </h4>
+                    <p class="text-[11px] text-red-800 leading-tight">
+                        Ukibonyeza hapa, mfumo utafuta rekodi zote za majaribio (wateja, malipo, ripoti) na kubakiza mfumo msafi ukiwa tayari kumkabidhi mteja wako mpya!
+                    </p>
+                    <button type="button" onclick="clearAllDataForSale()" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow transition cursor-pointer">
+                        <i class="fa-solid fa-trash-can"></i> Futa Data Zote / Anza Upya (Clear All)
+                    </button>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('businessSettingsModal')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-sm">Ghairi</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow">Hifadhi Mabadiliko</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: RISITI NDOGO YA MASHINE / TRA (STRICTLY SMALL THERMAL SLIP - 80MM) -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-4 max-h-[96vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 mb-3 border-b border-slate-200 no-print">
+                <span class="text-xs font-black uppercase text-slate-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-receipt text-emerald-600"></i> Risiti Ndogo ya Mashine (80mm)
+                </span>
+                <button onclick="closeModal('receiptModal')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+
+            <!-- Thermal Paper Style Area (PRINTABLE 80mm - EXACT FIT) -->
+            <div id="printableReceiptArea" class="printable-section thermal-receipt-paper p-3.5 font-mono-receipt text-slate-900 text-xs leading-tight">
+                <div class="text-center pb-2.5 border-b border-dashed border-slate-400">
+                    <div id="receiptLogoHolder" class="w-9 h-9 mx-auto mb-1 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        <i class="fa-solid fa-hotel"></i>
+                    </div>
+                    <h3 id="rcLodgeName" class="font-extrabold text-xs uppercase tracking-tight">JINA LA LODGI</h3>
+                    <p id="rcLodgeSlogan" class="text-[9px] text-slate-600 italic">Ukarimu na Utulivu</p>
+                    <p id="rcAddress" class="text-[9px] text-slate-700 mt-0.5">Mtaa wa Posta, Mkoani, TZ</p>
+                    <p id="rcPhone" class="text-[9px] text-slate-700">Simu: 07XXXXXXXX</p>
+                    <p class="text-[9px] text-slate-700">TIN: <span id="rcTin" class="font-bold">100-000-000</span></p>
+                    <p class="text-[9px] font-bold text-slate-900 mt-1 uppercase border-y border-dashed border-slate-300 py-0.5">*** RISITI YA FEDHA (EFD) ***</p>
+                </div>
+
+                <div class="py-2 border-b border-dashed border-slate-400 text-[10px] space-y-0.5">
+                    <div class="flex justify-between">
+                        <span>RISITI NO:</span>
+                        <span id="rcReceiptNo" class="font-bold">#REC-0001</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>TAREHE & SAA:</span>
+                        <span id="rcDateTime">20/10/2026 14:30</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>MHUDUMU:</span>
+                        <span id="rcStaffName">Mapokezi</span>
+                    </div>
+                </div>
+
+                <!-- Guest & Journey Details -->
+                <div class="py-2 border-b border-dashed border-slate-400 text-[10px] space-y-0.5">
+                    <div>MTEJA: <span id="rcGuestName" class="font-bold">JINA LA MTEJA</span></div>
+                    <div>SIMU: <span id="rcGuestPhone">07XXXXXXXX</span></div>
+                    <div>NIDA: <span id="rcGuestId">NIDA-XXXXXXXX</span></div>
+                    <div class="text-[9px] bg-slate-100 p-1 rounded mt-0.5 font-bold">
+                        SAFARI: <span id="rcOrigin">DAR</span> ➔ <span id="rcDestination">DODOMA</span>
+                    </div>
+                </div>
+
+                <!-- Charges Breakdown -->
+                <div class="py-2 border-b border-dashed border-slate-400 text-[10px] space-y-1">
+                    <div class="flex justify-between">
+                        <span id="rcRoomDetails">CHUMBA #101</span>
+                        <span id="rcDaysCount">1 Siku</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-[11px] pt-1">
+                        <span>JUMLA:</span>
+                        <span id="rcTotalAmount">TZS 35,000</span>
+                    </div>
+                    <div class="flex justify-between text-emerald-800 font-bold">
+                        <span>IMELIPWA:</span>
+                        <span id="rcPaidAmount">TZS 35,000</span>
+                    </div>
+                    <div class="flex justify-between text-red-600 font-bold" id="rcBalanceRow">
+                        <span>BAKI:</span>
+                        <span id="rcBalanceAmount">TZS 0</span>
+                    </div>
+                    <div class="flex justify-between text-[9px] text-slate-600">
+                        <span>NJIA YA MALIPO:</span>
+                        <span id="rcPaymentMethod">M-Pesa</span>
+                    </div>
+                </div>
+
+                <!-- Footer TRA Verification Note -->
+                <div class="pt-2 text-center space-y-1">
+                    <p class="text-[9px] font-bold">ASANTE KWA KUTUCHAGUA!</p>
+                    <div class="text-center">
+                        <span class="inline-block bg-slate-900 text-white font-mono text-[8px] tracking-wider px-2 py-0.5 rounded">
+                            TRA VERIFIED POS SLIP
+                        </span>
+                    </div>
+                    <p class="text-[8px] text-slate-400">Lodge Management POS System</p>
+                </div>
+            </div>
+
+            <!-- Print & WhatsApp Actions -->
+            <div class="mt-3 space-y-2 no-print">
+                <div class="flex gap-2">
+                    <button onclick="window.print()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-1.5 text-xs cursor-pointer">
+                        <i class="fa-solid fa-print"></i> Chapisha Risiti Ndogo
+                    </button>
+                    <button onclick="shareReceiptWhatsApp()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-2.5 rounded-xl shadow flex items-center justify-center gap-1 text-xs cursor-pointer">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+                    </button>
+                </div>
+                <button onclick="closeModal('receiptModal'); if(currentActiveItem) showBossInvoice(currentActiveItem.id || currentActiveItem.bookingId);" class="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-file-invoice"></i> Fungua Invoice ya Boss Hapa
+                </button>
+                <button onclick="closeModal('receiptModal')" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs cursor-pointer">
+                    Funga
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: INVOICE YA BOSS (OFFICIAL A4 EXECUTIVE STATEMENT / BILL OF CHARGES) -->
+    <div id="bossInvoiceModal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 max-h-[96vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-3 mb-4 border-b border-slate-200 no-print">
+                <div class="flex items-center gap-2">
+                    <span class="bg-blue-700 text-white text-xs font-black px-2.5 py-1 rounded-md uppercase tracking-wider">Hati Rasmi</span>
+                    <h3 class="text-base font-extrabold text-slate-900">Invoice ya Boss (Official Statement of Bill)</h3>
+                </div>
+                <button onclick="closeModal('bossInvoiceModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <!-- Printable Boss Invoice Canvas -->
+            <div id="printableInvoiceArea" class="printable-section boss-invoice-paper p-8 text-slate-900">
+                <!-- Header: Logo, Name, Invoice Title -->
+                <div class="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-6 mb-6 gap-4">
+                    <div class="flex items-center space-x-3.5">
+                        <div id="invLogoHolder" class="w-14 h-14 rounded-2xl bg-blue-900 text-white flex items-center justify-center text-2xl font-black shadow-md overflow-hidden">
+                            <i class="fa-solid fa-hotel"></i>
+                        </div>
+                        <div>
+                            <h2 id="invLodgeName" class="text-xl font-black text-slate-900 tracking-tight uppercase leading-none">JINA LA LODGI</h2>
+                            <p id="invLodgeSlogan" class="text-xs text-slate-500 font-semibold mt-1">Ukarimu, Utulivu na Usalama Masaa 24</p>
+                            <p id="invAddress" class="text-xs text-slate-600 mt-1">Mtaa wa Posta, Mkoani, Tanzania</p>
+                            <p class="text-xs text-slate-600">Simu: <span id="invPhone" class="font-bold">07XXXXXXXX</span> | Email: <span id="invEmail">info@lodgemanager.co.tz</span></p>
+                            <p class="text-xs text-slate-600">TIN: <span id="invTin" class="font-bold text-slate-900">100-000-000</span></p>
+                        </div>
+                    </div>
+                    <div class="text-right sm:text-right w-full sm:w-auto">
+                        <span class="inline-block bg-blue-900 text-white text-xs font-black uppercase px-3 py-1 rounded-md tracking-wider">TAX INVOICE</span>
+                        <h3 id="invNumber" class="text-lg font-black text-slate-900 mt-2 font-mono">#INV-2026-0001</h3>
+                        <p class="text-xs text-slate-500">Tarehe ya Hati: <span id="invIssueDate" class="font-bold text-slate-800">20/10/2026</span></p>
+                        <div id="invPaymentStamp" class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            IMELIPWA YOTE
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billed To & Journey Breakdown -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 text-xs">
+                    <div>
+                        <h4 class="font-black text-slate-700 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1">Taarifa za Mteja (Billed To):</h4>
+                        <p class="text-sm font-black text-slate-900" id="invGuestName">-</p>
+                        <p class="text-slate-600 mt-1">Simu: <span id="invGuestPhone" class="font-bold text-slate-800">-</span></p>
+                        <p class="text-slate-600">Kitambulisho: <span id="invGuestId" class="font-bold text-slate-800">-</span></p>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-slate-700 uppercase tracking-wider mb-2 border-b border-slate-200 pb-1">Maelezo ya Safari & Malazi:</h4>
+                        <p class="text-slate-700 font-bold">Safari: <span id="invOrigin" class="text-blue-900">-</span> ➔ <span id="invDestination" class="text-blue-900">-</span></p>
+                        <p class="text-slate-600 mt-1">Chumba Alichokaa: <span id="invRoom" class="font-black text-slate-900">-</span></p>
+                        <p class="text-slate-600">Mhudumu Mhusika: <span id="invStaff" class="font-bold text-slate-800">Mapokezi</span></p>
+                    </div>
+                </div>
+
+                <!-- Itemized Invoice Table -->
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left text-xs border border-slate-200 rounded-lg">
+                        <thead class="bg-slate-100 text-slate-800 uppercase font-black border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Maelezo ya Huduma</th>
+                                <th class="p-3 text-center">Idadi ya Siku</th>
+                                <th class="p-3 text-right">Bei kwa Usiku</th>
+                                <th class="p-3 text-right">Jumla (TZS)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            <tr>
+                                <td class="p-3.5">
+                                    <p class="font-black text-slate-900" id="invTableItemTitle">Malazi ya Chumba #101</p>
+                                    <p class="text-[11px] text-slate-500" id="invTableItemDesc">Kiyoyozi (AC), WiFi, TV, Choo cha Ndani na Huduma ya Chumbani</p>
+                                </td>
+                                <td class="p-3.5 text-center font-bold" id="invTableDays">1 Siku</td>
+                                <td class="p-3.5 text-right font-semibold" id="invTableRate">TZS 35,000</td>
+                                <td class="p-3.5 text-right font-black text-slate-900" id="invTableTotal">TZS 35,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Financial Calculation Summary -->
+                <div class="flex justify-end mb-8">
+                    <div class="w-full sm:w-72 space-y-2 text-xs">
+                        <div class="flex justify-between py-1 border-b border-slate-100">
+                            <span class="text-slate-500 font-semibold">Gharama Halisi (Subtotal):</span>
+                            <span id="invSubtotal" class="font-bold text-slate-800">TZS 35,000</span>
+                        </div>
+                        <div class="flex justify-between py-1 border-b border-slate-100">
+                            <span class="text-slate-500 font-semibold">Kodi ya Ongezeko la Thamani (VAT 18%):</span>
+                            <span class="font-bold text-slate-800">Imejumuishwa</span>
+                        </div>
+                        <div class="flex justify-between py-1.5 border-b-2 border-slate-900 text-sm font-black">
+                            <span>Jumla Kamili (Grand Total):</span>
+                            <span id="invGrandTotal" class="text-blue-900">TZS 35,000</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-emerald-700 font-bold">
+                            <span>Kiasi Kilicholipwa (Paid):</span>
+                            <span id="invAmountPaid">TZS 35,000</span>
+                        </div>
+                        <div class="flex justify-between py-1 text-red-600 font-black border-t border-slate-200 pt-1" id="invBalanceRow">
+                            <span>Baki Inayodaiwa (Due):</span>
+                            <span id="invBalance">TZS 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signatures & Official Stamp Area -->
+                <div class="grid grid-cols-2 gap-8 pt-6 border-t-2 border-dashed border-slate-300 text-xs text-slate-600 mt-6">
+                    <div class="text-center pt-8 border-t border-slate-400">
+                        <p class="font-bold text-slate-900" id="invSignStaff">Mhudumu wa Mapokezi</p>
+                        <p class="text-[10px] text-slate-400 uppercase">Sahihi ya Mpokeaji</p>
+                    </div>
+                    <div class="text-center pt-8 border-t border-slate-400">
+                        <p class="font-bold text-slate-900">Meneja wa Lodgi / Boss</p>
+                        <p class="text-[10px] text-slate-400 uppercase">Muhuri na Sahihi ya Ofisi</p>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center text-[10px] text-slate-400 border-t border-slate-100 pt-3">
+                    Hati hii imetengenezwa kiotomatiki na Mfumo Rasmi wa Usimamizi wa Lodgi &bull; Asante kwa kutuchagua!
+                </div>
+            </div>
+
+            <!-- Actions: Print, WhatsApp, Close -->
+            <div class="mt-6 flex flex-wrap gap-3 justify-end no-print">
+                <button onclick="closeModal('bossInvoiceModal'); if(currentActiveItem) showReceipt(currentActiveItem.id || currentActiveItem.bookingId);" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-receipt text-amber-400"></i> Fungua Risiti Ndogo (80mm)
+                </button>
+                <button onclick="shareInvoiceWhatsApp()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Tuma Invoice kwa WhatsApp
+                </button>
+                <button onclick="window.print()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-print"></i> Chapisha Invoice ya Boss (Print)
+                </button>
+                <button onclick="closeModal('bossInvoiceModal')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer">
+                    Funga
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: ONGEZA CHUMBA KIPYA -->
+    <div id="addRoomModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-slate-900">Ongeza Chumba Kipya</h3>
+                <h3 class="text-base font-bold text-slate-900">Ongeza Chumba Kipya</h3>
                 <button onclick="closeModal('addRoomModal')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
             </div>
             <form id="addRoomForm" onsubmit="handleAddRoom(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya Chumba *</label>
-                    <input type="text" id="nrNumber" required placeholder="mfano: 104, 203, VIP 1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="nrNumber" required placeholder="mf. 104, 203, VIP 1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Aina ya Chumba</label>
                     <select id="nrType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
                         <option value="Single">Single (Kitanda Kimoja)</option>
                         <option value="Double">Double (Kitanda Kikubwa)</option>
-                        <option value="VIP">VIP</option>
+                        <option value="VIP">VIP Deluxe</option>
                         <option value="Suite">Executive Suite</option>
                     </select>
                 </div>
@@ -361,59 +979,140 @@
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeModal('addRoomModal')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-sm">Ghairi</button>
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Hifadhi Chumba</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Hifadhi Chumba</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- JavaScript Data Logic -->
+    <!-- MODAL 5: ONGEZA MHUDUMU MPYA -->
+    <div id="addStaffModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-slate-900">Ongeza Mhudumu / Mfanyakazi Mpya</h3>
+                <button onclick="closeModal('addStaffModal')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+            <form id="addStaffForm" onsubmit="handleAddStaff(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jina Kamili la Mhudumu *</label>
+                    <input type="text" id="stName" required placeholder="mf. Rehema Joseph Kimaro" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya Simu *</label>
+                    <input type="tel" id="stPhone" required placeholder="07XXXXXXXX" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Wadhifa (Role) *</label>
+                    <select id="stRole" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+                        <option value="Mapokezi (Receptionist)">Mapokezi (Receptionist)</option>
+                        <option value="Meneja wa Lodgi">Meneja wa Lodgi</option>
+                        <option value="Mhudumu wa Usafi">Mhudumu wa Usafi (Housekeeper)</option>
+                        <option value="Mlinzi wa Usiku">Mlinzi wa Usiku (Security)</option>
+                        <option value="Mhasibu (Cashier)">Mhasibu (Cashier)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Shift ya Kazi *</label>
+                    <select id="stShift" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+                        <option value="Asubuhi (06:00 - 14:00)">Asubuhi (06:00 - 14:00)</option>
+                        <option value="Mchana (14:00 - 22:00)">Mchana (14:00 - 22:00)</option>
+                        <option value="Usiku (22:00 - 06:00)">Usiku (22:00 - 06:00)</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('addStaffModal')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-sm">Ghairi</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Hifadhi Mhudumu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
     <script>
-        // Default initial data
-        const defaultRooms = [
-            { namba: "101", aina: "Single", bei: 35000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, Feni, Choo cha Ndani" },
-            { namba: "102", aina: "Single", bei: 35000, hali: "Kimechukuliwa", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, TV, Choo cha Ndani" },
+        // Clean Initial Profile for Commercial Reselling
+        const cleanBusiness = {
+            name: "LODGE & SUITES MANAGEMENT",
+            slogan: "Ukarimu, Utulivu na Usalama Masaa 24",
+            phone: "0754 000 000",
+            whatsapp: "+255754000000",
+            email: "info@lodgemanager.co.tz",
+            tin: "100-000-000",
+            address: "Mtaa wa Posta, Mkoani, Tanzania",
+            about: "Tunatoa huduma bora za malazi, vyumba safi vyenye kiyoyozi, WiFi ya bure, usalama wa uhakika, na chakula/chai ya asubuhi kwa wateja wetu wote.",
+            logoData: ""
+        };
+
+        // Standard Starting Rooms (All Vacant / Wazi)
+        const cleanRooms = [
+            { namba: "101", aina: "Single", bei: 35000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, TV, Choo cha Ndani" },
+            { namba: "102", aina: "Single", bei: 35000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, TV, Choo cha Ndani" },
             { namba: "103", aina: "Double", bei: 60000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, Smart TV, Fridge" },
-            { namba: "201", aina: "Double", bei: 60000, hali: "Kimechukuliwa", sakafu: "Ghorofa ya 2", vifaa: "WiFi, AC, Smart TV, Balcony" },
+            { namba: "201", aina: "Double", bei: 60000, hali: "Wazi", sakafu: "Ghorofa ya 2", vifaa: "WiFi, AC, Smart TV, Balcony" },
             { namba: "202", aina: "VIP", bei: 120000, hali: "Wazi", sakafu: "Ghorofa ya 2", vifaa: "King Bed, AC, 55 TV, Jacuzzi" },
             { namba: "301", aina: "Suite", bei: 180000, hali: "Wazi", sakafu: "Ghorofa ya 3", vifaa: "Penthouse Lounge, Bathtub, City View" }
         ];
 
-        const defaultBookings = [
-            { id: 1, jina: "Juma Bakari", simu: "0754 123 456", kitambulisho: "19900101-12345-00001", chumba: "102", siku: 1, jumla: 35000, malipo: 35000, njia: "M-Pesa", hali: "Yupo Ndani", tarehe: new Date().toLocaleDateString('sw-TZ') },
-            { id: 2, jina: "Amina Salum", simu: "0712 987 654", kitambulisho: "19880520-54321-00002", chumba: "201", siku: 1, jumla: 60000, malipo: 60000, njia: "Tigo Pesa", hali: "Yupo Ndani", tarehe: new Date().toLocaleDateString('sw-TZ') }
+        // Clean Staff Template
+        const cleanStaff = [
+            { id: 1, name: "Mhudumu wa Mapokezi", phone: "0754 000 001", role: "Mapokezi (Receptionist)", shift: "Asubuhi (06:00 - 14:00)", status: "Kazini" },
+            { id: 2, name: "Meneja wa Zamu", phone: "0754 000 002", role: "Meneja wa Lodgi", shift: "Mchana (14:00 - 22:00)", status: "Kazini" }
         ];
 
-        const defaultPayments = [
-            { id: 1, tarehe: new Date().toLocaleDateString('sw-TZ'), jina: "Juma Bakari", chumba: "102", kiasi: 35000, njia: "M-Pesa" },
-            { id: 2, tarehe: new Date().toLocaleDateString('sw-TZ'), jina: "Amina Salum", chumba: "201", kiasi: 60000, njia: "Tigo Pesa" }
-        ];
+        // Persistent Data from localStorage (CLEAN - NO DUMMY DEMO GUESTS!)
+        let business = JSON.parse(localStorage.getItem('lodge_business')) || cleanBusiness;
+        let staff = JSON.parse(localStorage.getItem('lodge_staff')) || cleanStaff;
+        let rooms = JSON.parse(localStorage.getItem('lodge_rooms')) || cleanRooms;
+        let bookings = JSON.parse(localStorage.getItem('lodge_bookings')) || []; // Zero demo bookings!
+        let payments = JSON.parse(localStorage.getItem('lodge_payments')) || []; // Zero demo payments!
 
-        // Load from localStorage or use defaults
-        let rooms = JSON.parse(localStorage.getItem('lodge_rooms')) || defaultRooms;
-        let bookings = JSON.parse(localStorage.getItem('lodge_bookings')) || defaultBookings;
-        let payments = JSON.parse(localStorage.getItem('lodge_payments')) || defaultPayments;
+        // Commercial cleanliness guarantee: strip any remnant demo names from past tests
+        bookings = bookings.filter(b => b && b.jina !== "Juma Bakari" && b.jina !== "Amina Salum");
+        payments = payments.filter(p => p && p.jina !== "Juma Bakari" && p.jina !== "Amina Salum");
+        if (bookings.length === 0) {
+            rooms.forEach(r => { if (r.hali === 'Kimechukuliwa') r.hali = 'Wazi'; });
+        }
+
+        let currentActiveItem = null;
+        let revenueChartInstance = null;
+        let paymentChartInstance = null;
 
         function saveData() {
+            localStorage.setItem('lodge_business', JSON.stringify(business));
+            localStorage.setItem('lodge_staff', JSON.stringify(staff));
             localStorage.setItem('lodge_rooms', JSON.stringify(rooms));
             localStorage.setItem('lodge_bookings', JSON.stringify(bookings));
             localStorage.setItem('lodge_payments', JSON.stringify(payments));
             renderAll();
         }
 
+        // RESET / CLEAR ALL DATA FOR SELLING TO A CLIENT
+        function clearAllDataForSale() {
+            if (confirm('Je, una uhakika unataka kusafisha data zote ili kumkabidhi mteja mfumo ukiwa msafi kabisa bila mteja wala malipo ya zamani?')) {
+                bookings = [];
+                payments = [];
+                rooms.forEach(r => r.hali = 'Wazi');
+                saveData();
+                closeModal('businessSettingsModal');
+                alert('Mfumo umesafishwa kikamilifu! Sasa unaweza kumkabidhi mteja wako akiwa na 0 wateja na 0 malipo.');
+            }
+        }
+
         function formatTZS(amount) {
-            return 'TZS ' + Number(amount).toLocaleString('en-US') + '/=';
+            return 'TZS ' + Number(amount || 0).toLocaleString('en-US') + '/=';
         }
 
         // Tab Switching
         function switchTab(tabId) {
-            const tabs = ['dashboard', 'rooms', 'checkin', 'reports'];
+            const tabs = ['dashboard', 'rooms', 'checkin', 'staff', 'reports'];
             tabs.forEach(t => {
                 document.getElementById('sec-' + t).classList.add('hidden');
                 document.getElementById('tab-' + t).classList.remove('active-tab');
             });
             document.getElementById('sec-' + tabId).classList.remove('hidden');
             document.getElementById('tab-' + tabId).classList.add('active-tab');
+            if (tabId === 'dashboard') {
+                setTimeout(renderCharts, 100);
+            }
         }
 
         function openModal(id) {
@@ -423,21 +1122,222 @@
             document.getElementById(id).classList.add('hidden');
         }
 
-        // Render Functions
-        function renderAll() {
-            renderDashboard();
-            renderRoomsTable();
-            renderCheckInSelect();
-            renderActiveGuests();
-            renderReports();
+        // Preview Logo
+        function previewLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('settingsLogoPreview');
+                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+                    business.logoData = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
         }
 
+        // Save Business Settings
+        function handleSaveBusinessSettings(e) {
+            e.preventDefault();
+            business.name = document.getElementById('setLodgeName').value.trim();
+            business.slogan = document.getElementById('setLodgeSlogan').value.trim();
+            business.phone = document.getElementById('setPhone').value.trim();
+            business.whatsapp = document.getElementById('setWhatsapp').value.trim();
+            business.email = document.getElementById('setEmail').value.trim();
+            business.tin = document.getElementById('setTin').value.trim();
+            business.address = document.getElementById('setAddress').value.trim();
+            saveData();
+            closeModal('businessSettingsModal');
+            alert('Taarifa na nembo ya ofisi zimehifadhiwa kikamilifu!');
+        }
+
+        // Render Business Profile
+        function renderBusinessProfile() {
+            document.getElementById('topBarLodgeName').textContent = business.name;
+            document.getElementById('topBarPhone').innerHTML = `<i class="fa-solid fa-phone text-xs"></i> ${business.phone}`;
+            document.getElementById('headerLodgeName').textContent = business.name;
+            document.getElementById('headerLodgeSlogan').textContent = business.slogan;
+
+            const logoImg = document.getElementById('headerLogoImg');
+            const defaultIcon = document.getElementById('headerLogoDefaultIcon');
+            if (business.logoData) {
+                logoImg.src = business.logoData;
+                logoImg.classList.remove('hidden');
+                defaultIcon.classList.add('hidden');
+            } else {
+                logoImg.classList.add('hidden');
+                defaultIcon.classList.remove('hidden');
+            }
+
+            document.getElementById('footerLodgeName').textContent = business.name;
+            document.getElementById('footerLodgeSlogan').textContent = business.slogan;
+            document.getElementById('footerPhone').textContent = business.phone;
+            document.getElementById('footerWhatsapp').textContent = business.whatsapp || business.phone;
+            document.getElementById('footerEmail').textContent = business.email;
+            document.getElementById('footerAddress').textContent = business.address;
+            document.getElementById('footerTin').textContent = business.tin || 'Hakuna';
+            document.getElementById('footerCopyName').textContent = business.name;
+
+            document.getElementById('setLodgeName').value = business.name;
+            document.getElementById('setLodgeSlogan').value = business.slogan;
+            document.getElementById('setPhone').value = business.phone;
+            document.getElementById('setWhatsapp').value = business.whatsapp || '';
+            document.getElementById('setEmail').value = business.email;
+            document.getElementById('setTin').value = business.tin || '';
+            document.getElementById('setAddress').value = business.address;
+        }
+
+        // REAL INTERACTIVE CHARTS (CHART.JS)
+        function renderCharts() {
+            const ctx1 = document.getElementById('revenueTrendChart');
+            if (!ctx1) return;
+
+            const daysLabels = [];
+            const revenueData = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString('sw-TZ');
+                const shortLabel = d.toLocaleDateString('sw-TZ', { weekday: 'short', day: 'numeric' });
+                daysLabels.push(shortLabel);
+
+                const daySum = payments
+                    .filter(p => p.tarehe === dateStr)
+                    .reduce((sum, p) => sum + Number(p.kiasi), 0);
+                revenueData.push(daySum);
+            }
+
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            revenueChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: daysLabels,
+                    datasets: [{
+                        label: 'Mapato ya Siku (TZS)',
+                        data: revenueData,
+                        backgroundColor: 'rgba(30, 64, 175, 0.85)',
+                        borderColor: '#1e40af',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' TZS ' + Number(context.raw).toLocaleString('en-US');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value >= 1000 ? (value / 1000) + 'k' : value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Payment Methods Breakdown
+            const ctx2 = document.getElementById('paymentMethodsChart');
+            if (!ctx2) return;
+
+            const methodSums = {};
+            payments.forEach(p => {
+                const m = p.njia || 'M-Pesa';
+                methodSums[m] = (methodSums[m] || 0) + Number(p.kiasi);
+            });
+
+            const methodLabels = Object.keys(methodSums);
+            const methodValues = Object.values(methodSums);
+
+            if (paymentChartInstance) {
+                paymentChartInstance.destroy();
+            }
+
+            paymentChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: methodLabels.length ? methodLabels : ['Hakuna Malipo Bado'],
+                    datasets: [{
+                        data: methodValues.length ? methodValues : [1],
+                        backgroundColor: [
+                            '#10b981', // M-Pesa green
+                            '#3b82f6', // Tigo Pesa blue
+                            '#f59e0b', // Airtel Money amber
+                            '#8b5cf6', // Cash purple
+                            '#ec4899', // Card pink
+                            '#cbd5e1'  // Default
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // REAL EXCEL EXPORT (.XLSX)
+        function exportToExcel() {
+            if (payments.length === 0) {
+                alert('Hakuna rekodi za malipo bado za kupakua! Sajili mteja ili uweze kupakua ripoti.');
+                return;
+            }
+
+            const excelData = payments.map((p, index) => {
+                const b = bookings.find(item => item.id === p.bookingId) || {};
+                return {
+                    "Na": index + 1,
+                    "Tarehe ya Malipo": p.tarehe,
+                    "Jina la Mteja": p.jina,
+                    "Namba ya Chumba": p.chumba,
+                    "Anakotoka (Origin)": p.origin || b.origin || "Haikutajwa",
+                    "Anakokwenda (Destination)": p.destination || b.destination || "Haikutajwa",
+                    "Simu ya Mteja": b.simu || "-",
+                    "Kitambulisho": b.kitambulisho || "-",
+                    "Muda (Siku)": b.siku || 1,
+                    "Kiasi Kilicholipwa (TZS)": Number(p.kiasi),
+                    "Njia ya Malipo": p.njia,
+                    "Mhudumu Aliyepokea": p.staff || b.staff || "Mapokezi"
+                };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Ripoti ya Mapato");
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const fileName = `Ripoti_ya_Mapato_${business.name.replace(/\s+/g, '_')}_${todayStr}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+            alert(`Ripoti ya Excel (${fileName}) imepakuliwa kikamilifu!`);
+        }
+
+        // Render Dashboard
         function renderDashboard() {
             const total = rooms.length;
             const occupied = rooms.filter(r => r.hali === 'Kimechukuliwa').length;
             const vacant = rooms.filter(r => r.hali === 'Wazi').length;
             const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
-            const todaySum = payments.reduce((acc, p) => acc + Number(p.kiasi), 0);
+            const todayStr = new Date().toLocaleDateString('sw-TZ');
+            const todaySum = payments.filter(p => p.tarehe === todayStr).reduce((acc, p) => acc + Number(p.kiasi), 0);
 
             document.getElementById('statTotalRooms').textContent = total;
             document.getElementById('statOccupiedRooms').textContent = occupied;
@@ -454,11 +1354,11 @@
                 grid.innerHTML += `
                     <div class="p-3 rounded-xl border ${badgeColor} flex flex-col justify-between">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="font-extrabold text-sm">#${r.namba}</span>
+                            <span class="font-black text-sm">#${r.namba}</span>
                             <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full ${isVacant ? 'bg-emerald-200' : 'bg-red-200'}">${r.hali}</span>
                         </div>
                         <div class="text-xs font-semibold text-slate-700">${r.aina}</div>
-                        <div class="text-[11px] font-bold text-blue-700 mt-1">${formatTZS(r.bei)}</div>
+                        <div class="text-[11px] font-bold text-blue-800 mt-1">${formatTZS(r.bei)}</div>
                     </div>
                 `;
             });
@@ -468,24 +1368,33 @@
             const active = bookings.filter(b => b.hali === 'Yupo Ndani');
             guestList.innerHTML = '';
             if (active.length === 0) {
-                guestList.innerHTML = `<div class="text-xs text-slate-400 p-4 text-center">Hakuna mteja ndani kwa sasa</div>`;
+                guestList.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">Hakuna mteja ndani kwa sasa. Tayari kupokea wageni!</div>`;
             } else {
                 active.forEach(b => {
                     guestList.innerHTML += `
                         <div class="p-3 rounded-xl border border-slate-100 bg-slate-50 flex justify-between items-center">
                             <div>
                                 <h4 class="font-bold text-xs text-slate-900">${b.jina}</h4>
-                                <p class="text-[11px] text-slate-500">Chumba #${b.chumba} &bull; ${b.simu}</p>
+                                <p class="text-[11px] text-slate-500">Chumba #${b.chumba} &bull; ${b.origin} ➔ ${b.destination}</p>
                             </div>
-                            <button onclick="handleCheckOut(${b.id})" class="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer">
-                                Check-Out
-                            </button>
+                            <div class="flex gap-1.5">
+                                <button onclick="showReceipt(${b.id})" class="text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg border border-blue-200 cursor-pointer" title="Risiti">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </button>
+                                <button onclick="showBossInvoice(${b.id})" class="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg border border-indigo-200 cursor-pointer" title="Invoice ya Boss">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                </button>
+                                <button onclick="handleCheckOut(${b.id})" class="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer">
+                                    Check-Out
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
             }
         }
 
+        // Render Rooms
         function renderRoomsTable() {
             const tbody = document.getElementById('roomsTableBody');
             tbody.innerHTML = '';
@@ -512,6 +1421,42 @@
             });
         }
 
+        // Render Staff
+        function renderStaff() {
+            const tbody = document.getElementById('staffTableBody');
+            tbody.innerHTML = '';
+
+            const mCount = staff.filter(s => s.shift.includes('Asubuhi')).length;
+            const aCount = staff.filter(s => s.shift.includes('Mchana')).length;
+            const nCount = staff.filter(s => s.shift.includes('Usiku')).length;
+
+            document.getElementById('countMorningShift').textContent = `${mCount} Wahudumu`;
+            document.getElementById('countAfternoonShift').textContent = `${aCount} Wahudumu`;
+            document.getElementById('countNightShift').textContent = `${nCount} Wahudumu`;
+
+            const staffSelect = document.getElementById('ciStaffSelect');
+            staffSelect.innerHTML = '';
+            staff.forEach(s => {
+                staffSelect.innerHTML += `<option value="${s.name}">${s.name} (${s.role.split(' ')[0]})</option>`;
+            });
+
+            staff.forEach((s, idx) => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">${s.name}</td>
+                        <td class="p-3.5 text-xs font-semibold text-slate-600">${s.phone}</td>
+                        <td class="p-3.5"><span class="bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded">${s.role}</span></td>
+                        <td class="p-3.5 font-medium text-slate-700">${s.shift}</td>
+                        <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-full">${s.status}</span></td>
+                        <td class="p-3.5 text-right">
+                            <button onclick="deleteStaff(${idx})" class="text-xs text-red-500 hover:text-red-700 p-1 cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Check-in Selects & Calculations
         function renderCheckInSelect() {
             const select = document.getElementById('ciRoomSelect');
             select.innerHTML = '<option value="">-- Chagua Chumba --</option>';
@@ -520,7 +1465,7 @@
                 select.innerHTML = '<option value="">Hakuna chumba kilicho wazi kwa sasa</option>';
             } else {
                 vacant.forEach(r => {
-                    select.innerHTML += `<option value="${r.namba}" data-price="${r.bei}">Chumba #${r.namba} - ${r.aina} (${formatTZS(r.bei)}/siku)</option>`;
+                    select.innerHTML += `<option value="${r.namba}" data-price="${r.bei}" data-type="${r.aina}">Chumba #${r.namba} - ${r.aina} (${formatTZS(r.bei)}/siku)</option>`;
                 });
             }
             calculateCheckInCost();
@@ -539,12 +1484,13 @@
             }
         }
 
+        // Render Active Guests
         function renderActiveGuests() {
             const list = document.getElementById('activeGuestsFullList');
             const active = bookings.filter(b => b.hali === 'Yupo Ndani');
             list.innerHTML = '';
             if (active.length === 0) {
-                list.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">Hakuna mteja anayeishi ndani kwa sasa.</div>`;
+                list.innerHTML = `<div class="p-12 text-center text-slate-400 text-sm">Hakuna mteja anayeishi ndani kwa sasa. Vyumba viko tayari kupokea wageni!</div>`;
             } else {
                 active.forEach(b => {
                     const balance = b.jumla - b.malipo;
@@ -553,22 +1499,36 @@
                         : `<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Imelipwa Yote</span>`;
 
                     list.innerHTML += `
-                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <div>
-                                <h4 class="font-bold text-slate-900">${b.jina}</h4>
-                                <p class="text-xs text-slate-500">📞 ${b.simu} &bull; ID: ${b.kitambulisho}</p>
-                                <p class="text-xs font-semibold text-blue-700 mt-1">Chumba #${b.chumba} (${b.siku} siku) &bull; Gharama: ${formatTZS(b.jumla)}</p>
-                                <div class="mt-1">${balanceBadge}</div>
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between gap-3 shadow-sm">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-slate-900 text-sm">${b.jina}</h4>
+                                    <p class="text-xs text-slate-500">📞 ${b.simu} &bull; ID: ${b.kitambulisho}</p>
+                                    <p class="text-xs font-semibold text-blue-800 mt-1">Safari: <span class="text-slate-900">${b.origin} ➔ ${b.destination}</span></p>
+                                    <p class="text-xs text-slate-600">Chumba #${b.chumba} (${b.siku} siku) &bull; Gharama: ${formatTZS(b.jumla)}</p>
+                                    <div class="mt-1">${balanceBadge}</div>
+                                </div>
+                                <span class="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-lg">#${b.chumba}</span>
                             </div>
-                            <button onclick="handleCheckOut(${b.id})" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow cursor-pointer transition">
-                                <i class="fa-solid fa-right-from-bracket"></i> Check-Out Sasa
-                            </button>
+
+                            <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-200">
+                                <button onclick="showReceipt(${b.id})" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-receipt text-amber-400"></i> Risiti Ndogo
+                                </button>
+                                <button onclick="showBossInvoice(${b.id})" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-file-invoice"></i> Invoice ya Boss
+                                </button>
+                                <button onclick="handleCheckOut(${b.id})" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer">
+                                    <i class="fa-solid fa-right-from-bracket"></i> Check-Out
+                                </button>
+                            </div>
                         </div>
                     `;
                 });
             }
         }
 
+        // Render Reports
         function renderReports() {
             const totalRev = payments.reduce((acc, p) => acc + Number(p.kiasi), 0);
             document.getElementById('repTotalRevenue').textContent = formatTZS(totalRev);
@@ -577,20 +1537,282 @@
 
             const tbody = document.getElementById('paymentsTableBody');
             tbody.innerHTML = '';
-            payments.slice().reverse().forEach(p => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-3 text-xs text-slate-500">${p.tarehe}</td>
-                        <td class="p-3 font-bold text-slate-900">${p.jina}</td>
-                        <td class="p-3 font-semibold text-blue-700">#${p.chumba}</td>
-                        <td class="p-3 font-bold text-emerald-700">+${formatTZS(p.kiasi)}</td>
-                        <td class="p-3"><span class="bg-slate-100 text-slate-700 font-semibold text-xs px-2 py-0.5 rounded">${p.njia}</span></td>
-                    </tr>
-                `;
-            });
+            if (payments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400 text-xs">Hakuna kumbukumbu za malipo bado. Sajili mteja wa kwanza!</td></tr>`;
+            } else {
+                payments.slice().reverse().forEach(p => {
+                    const b = bookings.find(item => item.id === p.bookingId) || {};
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-3 text-xs text-slate-500">${p.tarehe}</td>
+                            <td class="p-3 font-bold text-slate-900">${p.jina}</td>
+                            <td class="p-3 font-semibold text-blue-700">#${p.chumba}</td>
+                            <td class="p-3 text-xs text-slate-600">${p.origin || b.origin || '-'} ➔ ${p.destination || b.destination || '-'}</td>
+                            <td class="p-3 font-bold text-emerald-700">+${formatTZS(p.kiasi)}</td>
+                            <td class="p-3"><span class="bg-slate-100 text-slate-700 font-semibold text-xs px-2 py-0.5 rounded">${p.njia}</span></td>
+                            <td class="p-3 text-xs text-slate-500">${p.staff || b.staff || 'Mapokezi'}</td>
+                            <td class="p-3 text-right space-x-1 whitespace-nowrap">
+                                <button onclick="showReceiptByPayment(${p.id})" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-2 py-1 rounded-lg cursor-pointer" title="Risiti Ndogo">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </button>
+                                <button onclick="showBossInvoiceByPayment(${p.id})" class="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold px-2.5 py-1 rounded-lg cursor-pointer" title="Invoice ya Boss">
+                                    <i class="fa-solid fa-file-invoice"></i> Invoice
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
         }
 
-        // Actions
+        // 1. SHOW STRICT SMALL THERMAL RECEIPT (80mm)
+        function showReceipt(bookingId) {
+            const b = bookings.find(item => item.id === bookingId);
+            if (!b) return;
+            currentActiveItem = b;
+
+            document.getElementById('rcLodgeName').textContent = business.name;
+            document.getElementById('rcLodgeSlogan').textContent = business.slogan;
+            document.getElementById('rcAddress').textContent = business.address;
+            document.getElementById('rcPhone').textContent = "Simu: " + business.phone;
+            document.getElementById('rcTin').textContent = business.tin || "100-000-000";
+
+            const logoHolder = document.getElementById('receiptLogoHolder');
+            if (business.logoData) {
+                logoHolder.innerHTML = `<img src="${business.logoData}" class="w-full h-full object-cover rounded-full">`;
+            } else {
+                logoHolder.innerHTML = `<i class="fa-solid fa-hotel"></i>`;
+            }
+
+            document.getElementById('rcReceiptNo').textContent = '#REC-' + (b.id.toString().slice(-4));
+            document.getElementById('rcDateTime').textContent = new Date().toLocaleDateString('sw-TZ') + ' ' + new Date().toLocaleTimeString('sw-TZ', {hour: '2-digit', minute:'2-digit'});
+            document.getElementById('rcStaffName').textContent = b.staff || "Mapokezi";
+
+            document.getElementById('rcGuestName').textContent = b.jina.toUpperCase();
+            document.getElementById('rcGuestPhone').textContent = b.simu;
+            document.getElementById('rcGuestId').textContent = b.kitambulisho;
+            document.getElementById('rcOrigin').textContent = (b.origin || "HAIKUTAJWA").toUpperCase();
+            document.getElementById('rcDestination').textContent = (b.destination || "HAIKUTAJWA").toUpperCase();
+
+            document.getElementById('rcRoomDetails').textContent = `CHUMBA #${b.chumba}`;
+            document.getElementById('rcDaysCount').textContent = `${b.siku} Siku`;
+            document.getElementById('rcTotalAmount').textContent = formatTZS(b.jumla);
+            document.getElementById('rcPaidAmount').textContent = formatTZS(b.malipo);
+
+            const balance = b.jumla - b.malipo;
+            document.getElementById('rcBalanceAmount').textContent = formatTZS(balance);
+            document.getElementById('rcPaymentMethod').textContent = b.njia;
+
+            openModal('receiptModal');
+        }
+
+        function showReceiptByPayment(paymentId) {
+            const p = payments.find(item => item.id === paymentId);
+            if (!p) return;
+            const b = bookings.find(item => item.id === p.bookingId) || {
+                id: p.id,
+                jina: p.jina,
+                simu: "0754 000 000",
+                kitambulisho: "NIDA",
+                chumba: p.chumba,
+                siku: 1,
+                jumla: p.kiasi,
+                malipo: p.kiasi,
+                njia: p.njia,
+                origin: p.origin || "DAR ES SALAAM",
+                destination: p.destination || "DODOMA",
+                staff: p.staff
+            };
+            showReceipt(b.id);
+        }
+
+        // 2. SHOW EXECUTIVE BOSS INVOICE (LUXURY STATEMENT)
+        function showBossInvoice(bookingId) {
+            const b = bookings.find(item => item.id === bookingId);
+            if (!b) return;
+            currentActiveItem = b;
+
+            document.getElementById('invLodgeName').textContent = business.name;
+            document.getElementById('invLodgeSlogan').textContent = business.slogan;
+            document.getElementById('invAddress').textContent = business.address;
+            document.getElementById('invPhone').textContent = business.phone;
+            document.getElementById('invEmail').textContent = business.email;
+            document.getElementById('invTin').textContent = business.tin || "100-000-000";
+
+            const logoHolder = document.getElementById('invLogoHolder');
+            if (business.logoData) {
+                logoHolder.innerHTML = `<img src="${business.logoData}" class="w-full h-full object-cover rounded-2xl">`;
+            } else {
+                logoHolder.innerHTML = `<i class="fa-solid fa-hotel"></i>`;
+            }
+
+            document.getElementById('invNumber').textContent = `#INV-2026-${b.id.toString().slice(-4)}`;
+            document.getElementById('invIssueDate').textContent = new Date().toLocaleDateString('sw-TZ');
+
+            // Stamp
+            const balance = b.jumla - b.malipo;
+            const stamp = document.getElementById('invPaymentStamp');
+            if (balance <= 0) {
+                stamp.textContent = "IMELIPWA YOTE (PAID)";
+                stamp.className = "mt-2 inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
+            } else {
+                stamp.textContent = `BAKI INAYODAIWA: ${formatTZS(balance)}`;
+                stamp.className = "mt-2 inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-red-100 text-red-800 border border-red-300";
+            }
+
+            document.getElementById('invGuestName').textContent = b.jina;
+            document.getElementById('invGuestPhone').textContent = b.simu;
+            document.getElementById('invGuestId').textContent = b.kitambulisho;
+            document.getElementById('invOrigin').textContent = b.origin || "Haikutajwa";
+            document.getElementById('invDestination').textContent = b.destination || "Haikutajwa";
+            document.getElementById('invRoom').textContent = `#${b.chumba}`;
+            document.getElementById('invStaff').textContent = b.staff || "Mapokezi";
+
+            const roomObj = rooms.find(r => r.namba === b.chumba);
+            const rate = roomObj ? roomObj.bei : (b.jumla / b.siku);
+            document.getElementById('invTableItemTitle').textContent = `Malazi ya Chumba #${b.chumba} (${roomObj ? roomObj.aina : 'Standard'})`;
+            document.getElementById('invTableItemDesc').textContent = roomObj ? roomObj.vifaa : "Kiyoyozi, WiFi, Choo cha Ndani na Huduma";
+            document.getElementById('invTableDays').textContent = `${b.siku} Siku`;
+            document.getElementById('invTableRate').textContent = formatTZS(rate);
+            document.getElementById('invTableTotal').textContent = formatTZS(b.jumla);
+
+            document.getElementById('invSubtotal').textContent = formatTZS(b.jumla);
+            document.getElementById('invGrandTotal').textContent = formatTZS(b.jumla);
+            document.getElementById('invAmountPaid').textContent = formatTZS(b.malipo);
+            document.getElementById('invBalance').textContent = formatTZS(balance);
+            document.getElementById('invSignStaff').textContent = b.staff || "Mhudumu wa Mapokezi";
+
+            openModal('bossInvoiceModal');
+        }
+
+        function showBossInvoiceByPayment(paymentId) {
+            const p = payments.find(item => item.id === paymentId);
+            if (!p) return;
+            const b = bookings.find(item => item.id === p.bookingId) || {
+                id: p.id,
+                jina: p.jina,
+                simu: "0754 000 000",
+                kitambulisho: "NIDA",
+                chumba: p.chumba,
+                siku: 1,
+                jumla: p.kiasi,
+                malipo: p.kiasi,
+                njia: p.njia,
+                origin: p.origin || "DAR ES SALAAM",
+                destination: p.destination || "DODOMA",
+                staff: p.staff
+            };
+            showBossInvoice(b.id);
+        }
+
+        // TUMA RISITI / INVOICE KWA WHATSAPP
+        function shareReceiptWhatsApp() {
+            if (!currentActiveItem) return;
+            const b = currentActiveItem;
+            const msg = `*RISITI YA MALIPO YA LODGI (80MM POS)*\n---------------------------\n*Lodgi:* ${business.name}\n*Mteja:* ${b.jina}\n*Simu:* ${b.simu}\n*Safari:* ${b.origin} ➔ ${b.destination}\n*Chumba:* #${b.chumba} (${b.siku} Siku)\n*Gharama:* TZS ${Number(b.jumla).toLocaleString()}\n*Kiasi Kilicholipwa:* TZS ${Number(b.malipo).toLocaleString()} (${b.njia})\n*Baki:* TZS ${Number(b.jumla - b.malipo).toLocaleString()}\n*Mhudumu:* ${b.staff || 'Mapokezi'}\n*Tarehe:* ${new Date().toLocaleDateString('sw-TZ')}\n---------------------------\n_Asante kwa kutuchagua! Karibu tena._`;
+            
+            let phoneClean = b.simu.replace(/\s+/g, '').replace(/-/g, '');
+            if (phoneClean.startsWith('0')) {
+                phoneClean = '255' + phoneClean.substring(1);
+            }
+            const waUrl = `https://wa.me/${phoneClean}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        function shareInvoiceWhatsApp() {
+            if (!currentActiveItem) return;
+            const b = currentActiveItem;
+            const balance = b.jumla - b.malipo;
+            const msg = `*INVOICE YA MALIPO YA LODGI (TAX INVOICE)*\n===========================\n*HOTELI/LODGI:* ${business.name}\n*Invoice Na:* #INV-2026-${b.id.toString().slice(-4)}\n*Tarehe:* ${new Date().toLocaleDateString('sw-TZ')}\n---------------------------\n*Mteja:* ${b.jina}\n*Simu:* ${b.simu}\n*Safari:* ${b.origin} ➔ ${b.destination}\n*Chumba:* #${b.chumba} (${b.siku} Siku)\n*Jumla ya Gharama:* TZS ${Number(b.jumla).toLocaleString()}\n*Imelipwa:* TZS ${Number(b.malipo).toLocaleString()}\n*Baki Inayodaiwa:* TZS ${Number(balance).toLocaleString()}\n*Hali:* ${balance <= 0 ? 'IMELIPWA YOTE' : 'INA BAKI'}\n===========================\n_Asante sana kwa ushirikiano wako!_`;
+            
+            let phoneClean = b.simu.replace(/\s+/g, '').replace(/-/g, '');
+            if (phoneClean.startsWith('0')) {
+                phoneClean = '255' + phoneClean.substring(1);
+            }
+            const waUrl = `https://wa.me/${phoneClean}?text=${encodeURIComponent(msg)}`;
+            window.open(waUrl, '_blank');
+        }
+
+        // Check-In Action
+        function handleCheckIn(e) {
+            e.preventDefault();
+            const jina = document.getElementById('ciGuestName').value.trim();
+            const simu = document.getElementById('ciPhone').value.trim();
+            const nida = document.getElementById('ciIdNumber').value.trim();
+            const origin = document.getElementById('ciOrigin').value.trim();
+            const destination = document.getElementById('ciDestination').value.trim();
+            const roomSelect = document.getElementById('ciRoomSelect');
+            const roomNo = roomSelect.value;
+            const days = Number(document.getElementById('ciDays').value || 1);
+            const selectedOpt = roomSelect.options[roomSelect.selectedIndex];
+            const price = Number(selectedOpt.getAttribute('data-price') || 0);
+            const total = price * days;
+            const paid = Number(document.getElementById('ciAmountPaid').value || total);
+            const njia = document.getElementById('ciPaymentMethod').value;
+            const staffName = document.getElementById('ciStaffSelect').value;
+
+            if (!roomNo) {
+                alert('Tafadhali chagua chumba kilicho wazi!');
+                return;
+            }
+
+            const newBooking = {
+                id: Date.now(),
+                jina,
+                simu,
+                kitambulisho: nida,
+                chumba: roomNo,
+                siku: days,
+                jumla: total,
+                malipo: paid,
+                njia,
+                origin,
+                destination,
+                staff: staffName,
+                hali: 'Yupo Ndani',
+                tarehe: new Date().toLocaleDateString('sw-TZ')
+            };
+            bookings.push(newBooking);
+
+            const roomObj = rooms.find(r => r.namba === roomNo);
+            if (roomObj) roomObj.hali = 'Kimechukuliwa';
+
+            if (paid > 0) {
+                payments.push({
+                    id: Date.now(),
+                    bookingId: newBooking.id,
+                    tarehe: new Date().toLocaleDateString('sw-TZ'),
+                    jina,
+                    chumba: roomNo,
+                    kiasi: paid,
+                    njia,
+                    origin,
+                    destination,
+                    staff: staffName
+                });
+            }
+
+            saveData();
+            document.getElementById('checkInForm').reset();
+            alert('Mteja ' + jina + ' amesajiliwa! Risiti na Invoice ziko tayari.');
+            showReceipt(newBooking.id);
+        }
+
+        // Check-Out Action
+        function handleCheckOut(bookingId) {
+            const b = bookings.find(item => item.id === bookingId);
+            if (!b) return;
+
+            if (confirm('Thibitisha kumfanyia Check-Out mteja: ' + b.jina + ' (Chumba #' + b.chumba + ')?')) {
+                b.hali = 'Ametoka (Checked-Out)';
+                const roomObj = rooms.find(r => r.namba === b.chumba);
+                if (roomObj) roomObj.hali = 'Wazi';
+                saveData();
+                alert('Mteja ' + b.jina + ' amefanya Check-Out! Chumba #' + b.chumba + ' sasa kiko Wazi.');
+            }
+        }
+
+        // Room Actions
         function handleAddRoom(e) {
             e.preventDefault();
             const namba = document.getElementById('nrNumber').value.trim();
@@ -628,108 +1850,40 @@
             }
         }
 
-        function handleCheckIn(e) {
+        // Staff Actions
+        function handleAddStaff(e) {
             e.preventDefault();
-            const jina = document.getElementById('ciGuestName').value.trim();
-            const simu = document.getElementById('ciPhone').value.trim();
-            const nida = document.getElementById('ciIdNumber').value.trim();
-            const roomSelect = document.getElementById('ciRoomSelect');
-            const roomNo = roomSelect.value;
-            const days = Number(document.getElementById('ciDays').value || 1);
-            const selectedOpt = roomSelect.options[roomSelect.selectedIndex];
-            const price = Number(selectedOpt.getAttribute('data-price') || 0);
-            const total = price * days;
-            const paid = Number(document.getElementById('ciAmountPaid').value || total);
-            const njia = document.getElementById('ciPaymentMethod').value;
+            const name = document.getElementById('stName').value.trim();
+            const phone = document.getElementById('stPhone').value.trim();
+            const role = document.getElementById('stRole').value;
+            const shift = document.getElementById('stShift').value;
 
-            if (!roomNo) {
-                alert('Tafadhali chagua chumba kilicho wazi!');
-                return;
-            }
-
-            // 1. Add Booking
-            const newBooking = {
-                id: Date.now(),
-                jina,
-                simu,
-                kitambulisho: nida,
-                chumba: roomNo,
-                siku: days,
-                jumla: total,
-                malipo: paid,
-                njia,
-                hali: 'Yupo Ndani',
-                tarehe: new Date().toLocaleDateString('sw-TZ')
-            };
-            bookings.push(newBooking);
-
-            // 2. Mark Room as Occupied
-            const roomObj = rooms.find(r => r.namba === roomNo);
-            if (roomObj) roomObj.hali = 'Kimechukuliwa';
-
-            // 3. Record Payment
-            if (paid > 0) {
-                payments.push({
-                    id: Date.now(),
-                    tarehe: new Date().toLocaleDateString('sw-TZ'),
-                    jina,
-                    chumba: roomNo,
-                    kiasi: paid,
-                    njia
-                });
-            }
-
+            staff.push({ id: Date.now(), name, phone, role, shift, status: 'Kazini' });
             saveData();
-            document.getElementById('checkInForm').reset();
-            alert('Mteja ' + jina + ' amesajiliwa kikamilifu katika Chumba #' + roomNo + '!');
-            switchTab('dashboard');
+            closeModal('addStaffModal');
+            document.getElementById('addStaffForm').reset();
+            alert('Mhudumu ' + name + ' ameongezwa kikamilifu!');
         }
 
-        function handleCheckOut(bookingId) {
-            const b = bookings.find(item => item.id === bookingId);
-            if (!b) return;
-
-            if (confirm('Thibitisha kumfanyia Check-Out mteja: ' + b.jina + ' (Chumba #' + b.chumba + ')?')) {
-                b.hali = 'Ametoka (Checked-Out)';
-                const roomObj = rooms.find(r => r.namba === b.chumba);
-                if (roomObj) roomObj.hali = 'Wazi';
+        function deleteStaff(index) {
+            if (confirm('Je, una uhakika unataka kumfuta mhudumu ' + staff[index].name + '?')) {
+                staff.splice(index, 1);
                 saveData();
-                alert('Mteja amefanya Check-Out! Chumba #' + b.chumba + ' sasa kiko Wazi.');
             }
         }
 
-        // Automatic Download functions directly in browser
-        function downloadAppPy() {
-            fetch('app.py')
-                .then(r => r.text())
-                .then(content => {
-                    const blob = new Blob([content], { type: 'text/x-python' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'app.py';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                })
-                .catch(() => alert('Faili la app.py lipo kwenye saraka ya mfumo wako.'));
+        // Master Render All
+        function renderAll() {
+            renderBusinessProfile();
+            renderDashboard();
+            renderRoomsTable();
+            renderStaff();
+            renderCheckInSelect();
+            renderActiveGuests();
+            renderReports();
+            renderCharts();
         }
 
-        function downloadRequirements() {
-            const content = 'streamlit>=1.35.0\npandas>=2.0.0\n';
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'requirements.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        // Initialize on Load
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('currentDate').textContent = 'Tarehe: ' + new Date().toLocaleDateString('sw-TZ');
             renderAll();

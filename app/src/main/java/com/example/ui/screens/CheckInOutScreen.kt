@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.GuestBookingEntity
@@ -31,6 +32,9 @@ import com.example.ui.components.formatDate
 import com.example.ui.components.formatMoney
 import com.example.ui.theme.GreenVacant
 import com.example.ui.theme.RedOccupied
+
+import com.example.ui.components.SmallThermalReceiptDialog
+import com.example.ui.components.BossInvoiceDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +53,9 @@ fun CheckInOutScreen(
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     var bookingToCheckOut by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var receiptBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var invoiceBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
+    var checkInSuccessBooking by remember { mutableStateOf<GuestBookingEntity?>(null) }
 
     // Check-in Form States
     var guestName by remember { mutableStateOf("") }
@@ -406,6 +413,20 @@ fun CheckInOutScreen(
                         onClick = {
                             if (selectedRoom != null) {
                                 val paid = amountPaidText.toDoubleOrNull() ?: calculatedTotal
+                                val createdBooking = GuestBookingEntity(
+                                    guestName = guestName,
+                                    phoneNumber = phoneNumber,
+                                    idNumber = idNumber,
+                                    roomId = selectedRoom!!.id,
+                                    roomNumber = selectedRoom!!.roomNumber,
+                                    checkInDate = System.currentTimeMillis(),
+                                    expectedCheckOutDate = System.currentTimeMillis() + (days * 86400000L),
+                                    daysCount = days,
+                                    totalAmount = calculatedTotal,
+                                    amountPaid = paid,
+                                    paymentMethod = paymentMethod,
+                                    notes = notes
+                                )
                                 viewModel.checkInGuest(
                                     guestName = guestName,
                                     phoneNumber = phoneNumber,
@@ -417,6 +438,7 @@ fun CheckInOutScreen(
                                     paymentMethod = paymentMethod,
                                     notes = notes,
                                     onSuccess = {
+                                        checkInSuccessBooking = createdBooking
                                         guestName = ""
                                         phoneNumber = ""
                                         idNumber = ""
@@ -507,6 +529,8 @@ fun CheckInOutScreen(
                             ActiveGuestCard(
                                 booking = booking,
                                 isSwahili = isSwahili,
+                                onReceiptClick = { receiptBooking = booking },
+                                onInvoiceClick = { invoiceBooking = booking },
                                 onCheckOutClick = { bookingToCheckOut = booking }
                             )
                         }
@@ -652,6 +676,98 @@ fun CheckInOutScreen(
             dismissButton = {
                 TextButton(onClick = { bookingToCheckOut = null }) {
                     Text(if (isSwahili) "Ghairi" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Small Thermal Receipt Dialog
+    if (receiptBooking != null) {
+        SmallThermalReceiptDialog(
+            booking = receiptBooking!!,
+            onDismiss = { receiptBooking = null },
+            onSwitchToBossInvoice = {
+                val b = receiptBooking
+                receiptBooking = null
+                invoiceBooking = b
+            }
+        )
+    }
+
+    // Boss Invoice Dialog
+    if (invoiceBooking != null) {
+        BossInvoiceDialog(
+            booking = invoiceBooking!!,
+            onDismiss = { invoiceBooking = null },
+            onSwitchToReceipt = {
+                val b = invoiceBooking
+                invoiceBooking = null
+                receiptBooking = b
+            }
+        )
+    }
+
+    // Check-in Success Prompt Dialog
+    if (checkInSuccessBooking != null) {
+        val b = checkInSuccessBooking!!
+        AlertDialog(
+            onDismissRequest = { checkInSuccessBooking = null },
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = GreenVacant, modifier = Modifier.size(36.dp)) },
+            title = {
+                Text(
+                    text = if (isSwahili) "Usajili Umekamilika Kikamilifu! 🎉" else "Check-In Completed! 🎉",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (isSwahili)
+                            "Mteja ${b.guestName} amesajiliwa katika Chumba #${b.roomNumber}. Ungependa kutoa risiti au invoice sasa?"
+                        else
+                            "Guest ${b.guestName} registered in Room #${b.roomNumber}. Would you like to view receipt or invoice?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            val saved = checkInSuccessBooking
+                            checkInSuccessBooking = null
+                            receiptBooking = saved
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenVacant),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("🧾 Tazama Risiti Ndogo (80mm)", fontWeight = FontWeight.Bold)
+                    }
+                    Button(
+                        onClick = {
+                            val saved = checkInSuccessBooking
+                            checkInSuccessBooking = null
+                            invoiceBooking = saved
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Description, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("📄 Tazama Invoice ya Boss", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { checkInSuccessBooking = null }) {
+                    Text(if (isSwahili) "Endelea / Funga" else "Continue / Close")
                 }
             }
         )

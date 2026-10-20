@@ -39,7 +39,7 @@ class LodgeRepository(
                     roomNumber = "102",
                     roomType = RoomType.SINGLE,
                     pricePerNight = 35000.0,
-                    status = RoomStatus.OCCUPIED,
+                    status = RoomStatus.VACANT,
                     floor = "Ghorofa ya 1",
                     amenities = "WiFi, AC, TV, Choo cha Ndani"
                 ),
@@ -55,7 +55,7 @@ class LodgeRepository(
                     roomNumber = "201",
                     roomType = RoomType.DOUBLE,
                     pricePerNight = 60000.0,
-                    status = RoomStatus.OCCUPIED,
+                    status = RoomStatus.VACANT,
                     floor = "Ghorofa ya 2",
                     amenities = "WiFi, AC, Smart TV, Balcony"
                 ),
@@ -77,70 +77,7 @@ class LodgeRepository(
                 )
             )
             roomDao.insertAllRooms(initialRooms)
-
-            val now = System.currentTimeMillis()
-            val cal = Calendar.getInstance()
-            cal.timeInMillis = now
-            cal.add(Calendar.DAY_OF_YEAR, 1)
-            val tomorrow = cal.timeInMillis
-
-            // Initial active bookings
-            val booking1 = GuestBookingEntity(
-                guestName = "Juma Bakari",
-                phoneNumber = "0754 123 456",
-                idNumber = "19900101-12345-00001",
-                roomId = 2,
-                roomNumber = "102",
-                checkInDate = now,
-                expectedCheckOutDate = tomorrow,
-                daysCount = 1,
-                totalAmount = 35000.0,
-                amountPaid = 35000.0,
-                paymentMethod = "M-Pesa",
-                status = BookingStatus.ACTIVE,
-                notes = "Mteja wa kawaida, amewahi mapema"
-            )
-
-            val booking2 = GuestBookingEntity(
-                guestName = "Amina Salum",
-                phoneNumber = "0712 987 654",
-                idNumber = "19880520-54321-00002",
-                roomId = 4,
-                roomNumber = "201",
-                checkInDate = now,
-                expectedCheckOutDate = tomorrow,
-                daysCount = 1,
-                totalAmount = 60000.0,
-                amountPaid = 60000.0,
-                paymentMethod = "Tigo Pesa",
-                status = BookingStatus.ACTIVE,
-                notes = "Ameomba huduma ya chai asubuhi"
-            )
-
-            val b1Id = bookingDao.insertBooking(booking1)
-            val b2Id = bookingDao.insertBooking(booking2)
-
-            val payment1 = PaymentRecordEntity(
-                bookingId = b1Id,
-                guestName = "Juma Bakari",
-                roomNumber = "102",
-                amount = 35000.0,
-                paymentMethod = "M-Pesa",
-                paymentDate = now,
-                notes = "Malipo ya usiku 1"
-            )
-
-            val payment2 = PaymentRecordEntity(
-                bookingId = b2Id,
-                guestName = "Amina Salum",
-                roomNumber = "201",
-                amount = 60000.0,
-                paymentMethod = "Tigo Pesa",
-                paymentDate = now,
-                notes = "Malipo kamili ya chumba cha Double"
-            )
-
-            paymentDao.insertAllPayments(listOf(payment1, payment2))
+            // Zero demo bookings and zero demo payments for clean commercial deployment!
         }
     }
 
