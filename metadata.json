@@ -1,0 +1,6 @@
+{
+  "name": "Lodge Manager",
+  "description": "Mfumo kamili wa Usimamizi wa Lodgi wenye Dashibodi, Usimamizi wa Vyumba, Check-In/Check-Out, na Ripoti za Mapato.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

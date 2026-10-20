@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mfumo wa Usimamizi wa Lodgi | Lodge Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .active-tab {
+            border-bottom: 3px solid #1e40af;
+            color: #1e40af;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Top Notification & Download Bar -->
+    <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-4 py-3 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+                <span class="bg-amber-500 text-slate-900 text-xs font-black px-2.5 py-0.5 rounded-full uppercase">Kipakuzi / Download</span>
+                <span class="text-sm font-medium">Bofya hapa kupakua mafaili yako ya Streamlit moja kwa moja:</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <a href="app.py" download="app.py" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer no-underline">
+                    <i class="fa-solid fa-download"></i> Pakua app.py (Direct)
+                </a>
+                <a href="requirements.txt" download="requirements.txt" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1.5 cursor-pointer no-underline">
+                    <i class="fa-solid fa-file-arrow-down"></i> Pakua requirements.txt (Direct)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-700 flex items-center justify-center text-white text-xl shadow-md">
+                        <i class="fa-solid fa-hotel"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">LODGE MANAGER</h1>
+                        <p class="text-xs text-slate-500 font-medium">Mfumo wa Kisasa wa Usimamizi wa Lodgi</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span id="currentDate" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200"></span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="flex space-x-4 sm:space-x-8 border-t border-slate-100 overflow-x-auto text-sm font-medium text-slate-600">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3 px-1 active-tab flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard ya Muhtasari
+                </button>
+                <button onclick="switchTab('rooms')" id="tab-rooms" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-door-open"></i> Usimamizi wa Vyumba
+                </button>
+                <button onclick="switchTab('checkin')" id="tab-checkin" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-user-check"></i> Usajili (Check-In / Out)
+                </button>
+                <button onclick="switchTab('reports')" id="tab-reports" class="py-3 px-1 hover:text-blue-700 flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Ripoti na Malipo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- 1. DASHBOARD YA MUHTASARI -->
+        <section id="sec-dashboard" class="space-y-6">
+            <!-- Metric Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Vyumba Vyote</p>
+                        <h3 id="statTotalRooms" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        <p class="text-xs text-slate-500 mt-1">Jumla ya vyumba vya lodgi</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-bed"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-red-600 uppercase tracking-wider">Vilivyochukuliwa</p>
+                        <h3 id="statOccupiedRooms" class="text-3xl font-extrabold text-red-600 mt-1">0</h3>
+                        <p id="statOccupancyRate" class="text-xs text-slate-500 mt-1">Uwezo: 0%</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Vilivyo Wazi</p>
+                        <h3 id="statVacantRooms" class="text-3xl font-extrabold text-emerald-600 mt-1">0</h3>
+                        <p class="text-xs text-slate-500 mt-1">Tayari kupokea mteja</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Mapato ya Leo</p>
+                        <h3 id="statTodayRevenue" class="text-2xl font-extrabold text-slate-900 mt-1">TZS 0/=</h3>
+                        <p class="text-xs text-slate-500 mt-1">Mkusanyiko wa siku ya leo</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action & Room Status Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Visual Rooms Status -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-table-cells-large text-blue-600"></i> Hali ya Vyumba kwa Haraka
+                        </h2>
+                        <button onclick="switchTab('rooms')" class="text-xs font-semibold text-blue-600 hover:underline">Tazama Vyote &rarr;</button>
+                    </div>
+                    <div id="quickRoomsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Active Guests Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-users text-indigo-600"></i> Wageni Waliopo Ndani
+                        </h2>
+                        <button onclick="switchTab('checkin')" class="text-xs font-semibold text-blue-600 hover:underline">+ Sajili Mpya</button>
+                    </div>
+                    <div id="quickActiveGuestsList" class="space-y-3 overflow-y-auto max-h-[360px]">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. USIMAMIZI WA VYUMBA -->
+        <section id="sec-rooms" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Orodha ya Vyumba vya Lodgi</h2>
+                        <p class="text-xs text-slate-500">Dhibiti na usimamie hali ya vyumba, bei kwa siku, na aina.</p>
+                    </div>
+                    <button onclick="openModal('addRoomModal')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-plus"></i> Ongeza Chumba Kipya
+                    </button>
+                </div>
+
+                <!-- Rooms Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="p-3.5">Namba</th>
+                                <th class="p-3.5">Aina ya Chumba</th>
+                                <th class="p-3.5">Bei kwa Siku</th>
+                                <th class="p-3.5">Ghorofa / Sakafu</th>
+                                <th class="p-3.5">Vifaa / Huduma</th>
+                                <th class="p-3.5">Hali ya Sasa</th>
+                                <th class="p-3.5 text-right">Kitendo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roomsTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. USAJILI (CHECK-IN / CHECK-OUT) -->
+        <section id="sec-checkin" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Check-in Form -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-blue-600"></i> Fomu ya Kusajili Mteja (Check-In)
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-5">Mteja akisajiliwa, chumba kitabadilishwa moja kwa moja kuwa 'Kimechukuliwa'.</p>
+
+                    <form id="checkInForm" onsubmit="handleCheckIn(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jina Kamili la Mteja *</label>
+                            <input type="text" id="ciGuestName" required placeholder="mf. Juma Bakari Mwalimu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya Simu *</label>
+                                <input type="tel" id="ciPhone" required placeholder="07XXXXXXXX" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kitambulisho / NIDA *</label>
+                                <input type="text" id="ciIdNumber" required placeholder="NIDA au Pasipoti" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Chagua Chumba Kilicho Wazi *</label>
+                            <select id="ciRoomSelect" onchange="calculateCheckInCost()" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Idadi ya Siku</label>
+                                <input type="number" id="ciDays" min="1" value="1" onchange="calculateCheckInCost()" onkeyup="calculateCheckInCost()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Jumla ya Gharama</label>
+                                <input type="text" id="ciTotalCost" readonly class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-blue-700 text-sm">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kiasi Kilicholipwa *</label>
+                                <input type="number" id="ciAmountPaid" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Njia ya Malipo</label>
+                                <select id="ciPaymentMethod" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
+                                    <option value="Cash (Pesa Taslimu)">Cash (Pesa Taslimu)</option>
+                                    <option value="M-Pesa">M-Pesa</option>
+                                    <option value="Tigo Pesa">Tigo Pesa</option>
+                                    <option value="Airtel Money">Airtel Money</option>
+                                    <option value="HaloPesa">HaloPesa</option>
+                                    <option value="Benki / Kadi">Benki / Kadi</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer mt-2">
+                            <i class="fa-solid fa-check"></i> Kamilisha Usajili (Check-In)
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Guests & Check-Out Management -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-door-closed text-red-600"></i> Wageni Waliopo Ndani & Check-Out
+                    </h2>
+                    <p class="text-xs text-slate-500 mb-4">Bonyeza 'Check-Out' mteja anapoondoka ili chumba kirudi kuwa wazi.</p>
+
+                    <div id="activeGuestsFullList" class="space-y-3 overflow-y-auto max-h-[500px]">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. RIPOTI NA MALIPO -->
+        <section id="sec-reports" class="hidden space-y-6">
+            <!-- Revenue Stats Summary -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-gradient-to-br from-blue-900 to-indigo-900 text-white p-5 rounded-2xl shadow-sm">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-blue-200">Jumla ya Mapato Yote</p>
+                    <h3 id="repTotalRevenue" class="text-2xl font-black mt-2">TZS 0/=</h3>
+                    <p class="text-xs text-blue-200 mt-1">Mkusanyiko kamili wa fedha</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Miamala ya Malipo</p>
+                    <h3 id="repTotalTransactions" class="text-2xl font-bold text-slate-900 mt-2">0</h3>
+                    <p class="text-xs text-slate-500 mt-1">Jumla ya risiti zilizotolewa</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Jumla ya Wageni Waliosajiliwa</p>
+                    <h3 id="repTotalBookings" class="text-2xl font-bold text-slate-900 mt-2">0</h3>
+                    <p class="text-xs text-slate-500 mt-1">Historia ya wateja wote</p>
+                </div>
+            </div>
+
+            <!-- Payments History Table -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-receipt text-emerald-600"></i> Historia ya Miamala ya Malipo
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Tarehe</th>
+                                <th class="p-3">Jina la Mteja</th>
+                                <th class="p-3">Chumba</th>
+                                <th class="p-3">Kiasi</th>
+                                <th class="p-3">Njia ya Malipo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal: Ongeza Chumba Kipya -->
+    <div id="addRoomModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900">Ongeza Chumba Kipya</h3>
+                <button onclick="closeModal('addRoomModal')" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+            </div>
+            <form id="addRoomForm" onsubmit="handleAddRoom(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Namba ya Chumba *</label>
+                    <input type="text" id="nrNumber" required placeholder="mfano: 104, 203, VIP 1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Aina ya Chumba</label>
+                    <select id="nrType" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white">
+                        <option value="Single">Single (Kitanda Kimoja)</option>
+                        <option value="Double">Double (Kitanda Kikubwa)</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Suite">Executive Suite</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Bei kwa Siku (TZS) *</label>
+                    <input type="number" id="nrPrice" required min="5000" step="5000" value="35000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Sakafu / Ghorofa</label>
+                    <input type="text" id="nrFloor" value="Ghorofa ya 1" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vifaa na Huduma</label>
+                    <input type="text" id="nrAmenities" value="WiFi, AC, TV, Choo cha Ndani" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('addRoomModal')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold text-sm">Ghairi</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm">Hifadhi Chumba</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Data Logic -->
+    <script>
+        // Default initial data
+        const defaultRooms = [
+            { namba: "101", aina: "Single", bei: 35000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, Feni, Choo cha Ndani" },
+            { namba: "102", aina: "Single", bei: 35000, hali: "Kimechukuliwa", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, TV, Choo cha Ndani" },
+            { namba: "103", aina: "Double", bei: 60000, hali: "Wazi", sakafu: "Ghorofa ya 1", vifaa: "WiFi, AC, Smart TV, Fridge" },
+            { namba: "201", aina: "Double", bei: 60000, hali: "Kimechukuliwa", sakafu: "Ghorofa ya 2", vifaa: "WiFi, AC, Smart TV, Balcony" },
+            { namba: "202", aina: "VIP", bei: 120000, hali: "Wazi", sakafu: "Ghorofa ya 2", vifaa: "King Bed, AC, 55 TV, Jacuzzi" },
+            { namba: "301", aina: "Suite", bei: 180000, hali: "Wazi", sakafu: "Ghorofa ya 3", vifaa: "Penthouse Lounge, Bathtub, City View" }
+        ];
+
+        const defaultBookings = [
+            { id: 1, jina: "Juma Bakari", simu: "0754 123 456", kitambulisho: "19900101-12345-00001", chumba: "102", siku: 1, jumla: 35000, malipo: 35000, njia: "M-Pesa", hali: "Yupo Ndani", tarehe: new Date().toLocaleDateString('sw-TZ') },
+            { id: 2, jina: "Amina Salum", simu: "0712 987 654", kitambulisho: "19880520-54321-00002", chumba: "201", siku: 1, jumla: 60000, malipo: 60000, njia: "Tigo Pesa", hali: "Yupo Ndani", tarehe: new Date().toLocaleDateString('sw-TZ') }
+        ];
+
+        const defaultPayments = [
+            { id: 1, tarehe: new Date().toLocaleDateString('sw-TZ'), jina: "Juma Bakari", chumba: "102", kiasi: 35000, njia: "M-Pesa" },
+            { id: 2, tarehe: new Date().toLocaleDateString('sw-TZ'), jina: "Amina Salum", chumba: "201", kiasi: 60000, njia: "Tigo Pesa" }
+        ];
+
+        // Load from localStorage or use defaults
+        let rooms = JSON.parse(localStorage.getItem('lodge_rooms')) || defaultRooms;
+        let bookings = JSON.parse(localStorage.getItem('lodge_bookings')) || defaultBookings;
+        let payments = JSON.parse(localStorage.getItem('lodge_payments')) || defaultPayments;
+
+        function saveData() {
+            localStorage.setItem('lodge_rooms', JSON.stringify(rooms));
+            localStorage.setItem('lodge_bookings', JSON.stringify(bookings));
+            localStorage.setItem('lodge_payments', JSON.stringify(payments));
+            renderAll();
+        }
+
+        function formatTZS(amount) {
+            return 'TZS ' + Number(amount).toLocaleString('en-US') + '/=';
+        }
+
+        // Tab Switching
+        function switchTab(tabId) {
+            const tabs = ['dashboard', 'rooms', 'checkin', 'reports'];
+            tabs.forEach(t => {
+                document.getElementById('sec-' + t).classList.add('hidden');
+                document.getElementById('tab-' + t).classList.remove('active-tab');
+            });
+            document.getElementById('sec-' + tabId).classList.remove('hidden');
+            document.getElementById('tab-' + tabId).classList.add('active-tab');
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Render Functions
+        function renderAll() {
+            renderDashboard();
+            renderRoomsTable();
+            renderCheckInSelect();
+            renderActiveGuests();
+            renderReports();
+        }
+
+        function renderDashboard() {
+            const total = rooms.length;
+            const occupied = rooms.filter(r => r.hali === 'Kimechukuliwa').length;
+            const vacant = rooms.filter(r => r.hali === 'Wazi').length;
+            const rate = total > 0 ? Math.round((occupied / total) * 100) : 0;
+            const todaySum = payments.reduce((acc, p) => acc + Number(p.kiasi), 0);
+
+            document.getElementById('statTotalRooms').textContent = total;
+            document.getElementById('statOccupiedRooms').textContent = occupied;
+            document.getElementById('statVacantRooms').textContent = vacant;
+            document.getElementById('statOccupancyRate').textContent = `Uwezo: ${rate}%`;
+            document.getElementById('statTodayRevenue').textContent = formatTZS(todaySum);
+
+            // Quick rooms grid
+            const grid = document.getElementById('quickRoomsGrid');
+            grid.innerHTML = '';
+            rooms.forEach(r => {
+                const isVacant = r.hali === 'Wazi';
+                const badgeColor = isVacant ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200';
+                grid.innerHTML += `
+                    <div class="p-3 rounded-xl border ${badgeColor} flex flex-col justify-between">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-extrabold text-sm">#${r.namba}</span>
+                            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full ${isVacant ? 'bg-emerald-200' : 'bg-red-200'}">${r.hali}</span>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-700">${r.aina}</div>
+                        <div class="text-[11px] font-bold text-blue-700 mt-1">${formatTZS(r.bei)}</div>
+                    </div>
+                `;
+            });
+
+            // Quick active guests list
+            const guestList = document.getElementById('quickActiveGuestsList');
+            const active = bookings.filter(b => b.hali === 'Yupo Ndani');
+            guestList.innerHTML = '';
+            if (active.length === 0) {
+                guestList.innerHTML = `<div class="text-xs text-slate-400 p-4 text-center">Hakuna mteja ndani kwa sasa</div>`;
+            } else {
+                active.forEach(b => {
+                    guestList.innerHTML += `
+                        <div class="p-3 rounded-xl border border-slate-100 bg-slate-50 flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-900">${b.jina}</h4>
+                                <p class="text-[11px] text-slate-500">Chumba #${b.chumba} &bull; ${b.simu}</p>
+                            </div>
+                            <button onclick="handleCheckOut(${b.id})" class="text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg border border-red-200 cursor-pointer">
+                                Check-Out
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderRoomsTable() {
+            const tbody = document.getElementById('roomsTableBody');
+            tbody.innerHTML = '';
+            rooms.forEach((r, idx) => {
+                const isVacant = r.hali === 'Wazi';
+                const statusBadge = isVacant
+                    ? '<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-lg">Wazi</span>'
+                    : '<span class="bg-red-100 text-red-800 text-xs font-bold px-2.5 py-1 rounded-lg">Kimechukuliwa</span>';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">#${r.namba}</td>
+                        <td class="p-3.5"><span class="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded">${r.aina}</span></td>
+                        <td class="p-3.5 font-semibold text-blue-800">${formatTZS(r.bei)}</td>
+                        <td class="p-3.5">${r.sakafu}</td>
+                        <td class="p-3.5 text-xs text-slate-500">${r.vifaa || '-'}</td>
+                        <td class="p-3.5">${statusBadge}</td>
+                        <td class="p-3.5 text-right space-x-1">
+                            <button onclick="toggleRoomStatus(${idx})" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg cursor-pointer">Badili Hali</button>
+                            <button onclick="deleteRoom(${idx})" class="text-xs text-red-500 hover:text-red-700 p-1 cursor-pointer"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderCheckInSelect() {
+            const select = document.getElementById('ciRoomSelect');
+            select.innerHTML = '<option value="">-- Chagua Chumba --</option>';
+            const vacant = rooms.filter(r => r.hali === 'Wazi');
+            if (vacant.length === 0) {
+                select.innerHTML = '<option value="">Hakuna chumba kilicho wazi kwa sasa</option>';
+            } else {
+                vacant.forEach(r => {
+                    select.innerHTML += `<option value="${r.namba}" data-price="${r.bei}">Chumba #${r.namba} - ${r.aina} (${formatTZS(r.bei)}/siku)</option>`;
+                });
+            }
+            calculateCheckInCost();
+        }
+
+        function calculateCheckInCost() {
+            const select = document.getElementById('ciRoomSelect');
+            const selectedOpt = select.options[select.selectedIndex];
+            const price = selectedOpt ? Number(selectedOpt.getAttribute('data-price') || 0) : 0;
+            const days = Number(document.getElementById('ciDays').value || 1);
+            const total = price * days;
+            document.getElementById('ciTotalCost').value = formatTZS(total);
+            const amtPaidInput = document.getElementById('ciAmountPaid');
+            if (!amtPaidInput.value || amtPaidInput.value == 0) {
+                amtPaidInput.value = total;
+            }
+        }
+
+        function renderActiveGuests() {
+            const list = document.getElementById('activeGuestsFullList');
+            const active = bookings.filter(b => b.hali === 'Yupo Ndani');
+            list.innerHTML = '';
+            if (active.length === 0) {
+                list.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">Hakuna mteja anayeishi ndani kwa sasa.</div>`;
+            } else {
+                active.forEach(b => {
+                    const balance = b.jumla - b.malipo;
+                    const balanceBadge = balance > 0 
+                        ? `<span class="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">Baki: ${formatTZS(balance)}</span>`
+                        : `<span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Imelipwa Yote</span>`;
+
+                    list.innerHTML += `
+                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <h4 class="font-bold text-slate-900">${b.jina}</h4>
+                                <p class="text-xs text-slate-500">📞 ${b.simu} &bull; ID: ${b.kitambulisho}</p>
+                                <p class="text-xs font-semibold text-blue-700 mt-1">Chumba #${b.chumba} (${b.siku} siku) &bull; Gharama: ${formatTZS(b.jumla)}</p>
+                                <div class="mt-1">${balanceBadge}</div>
+                            </div>
+                            <button onclick="handleCheckOut(${b.id})" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow cursor-pointer transition">
+                                <i class="fa-solid fa-right-from-bracket"></i> Check-Out Sasa
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderReports() {
+            const totalRev = payments.reduce((acc, p) => acc + Number(p.kiasi), 0);
+            document.getElementById('repTotalRevenue').textContent = formatTZS(totalRev);
+            document.getElementById('repTotalTransactions').textContent = payments.length;
+            document.getElementById('repTotalBookings').textContent = bookings.length;
+
+            const tbody = document.getElementById('paymentsTableBody');
+            tbody.innerHTML = '';
+            payments.slice().reverse().forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 text-xs text-slate-500">${p.tarehe}</td>
+                        <td class="p-3 font-bold text-slate-900">${p.jina}</td>
+                        <td class="p-3 font-semibold text-blue-700">#${p.chumba}</td>
+                        <td class="p-3 font-bold text-emerald-700">+${formatTZS(p.kiasi)}</td>
+                        <td class="p-3"><span class="bg-slate-100 text-slate-700 font-semibold text-xs px-2 py-0.5 rounded">${p.njia}</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Actions
+        function handleAddRoom(e) {
+            e.preventDefault();
+            const namba = document.getElementById('nrNumber').value.trim();
+            const aina = document.getElementById('nrType').value;
+            const bei = Number(document.getElementById('nrPrice').value);
+            const sakafu = document.getElementById('nrFloor').value;
+            const vifaa = document.getElementById('nrAmenities').value;
+
+            if (rooms.some(r => r.namba.toLowerCase() === namba.toLowerCase())) {
+                alert('Chumba chenye namba ' + namba + ' tayari kipo!');
+                return;
+            }
+
+            rooms.push({ namba, aina, bei, hali: 'Wazi', sakafu, vifaa });
+            saveData();
+            closeModal('addRoomModal');
+            document.getElementById('addRoomForm').reset();
+            alert('Chumba #' + namba + ' kimeongezwa kikamilifu!');
+        }
+
+        function toggleRoomStatus(index) {
+            const current = rooms[index].hali;
+            rooms[index].hali = (current === 'Wazi') ? 'Kimechukuliwa' : 'Wazi';
+            saveData();
+        }
+
+        function deleteRoom(index) {
+            if (rooms[index].hali === 'Kimechukuliwa') {
+                alert('Huwezi kufuta chumba kilicho na mteja ndani!');
+                return;
+            }
+            if (confirm('Je, una uhakika unataka kufuta Chumba #' + rooms[index].namba + '?')) {
+                rooms.splice(index, 1);
+                saveData();
+            }
+        }
+
+        function handleCheckIn(e) {
+            e.preventDefault();
+            const jina = document.getElementById('ciGuestName').value.trim();
+            const simu = document.getElementById('ciPhone').value.trim();
+            const nida = document.getElementById('ciIdNumber').value.trim();
+            const roomSelect = document.getElementById('ciRoomSelect');
+            const roomNo = roomSelect.value;
+            const days = Number(document.getElementById('ciDays').value || 1);
+            const selectedOpt = roomSelect.options[roomSelect.selectedIndex];
+            const price = Number(selectedOpt.getAttribute('data-price') || 0);
+            const total = price * days;
+            const paid = Number(document.getElementById('ciAmountPaid').value || total);
+            const njia = document.getElementById('ciPaymentMethod').value;
+
+            if (!roomNo) {
+                alert('Tafadhali chagua chumba kilicho wazi!');
+                return;
+            }
+
+            // 1. Add Booking
+            const newBooking = {
+                id: Date.now(),
+                jina,
+                simu,
+                kitambulisho: nida,
+                chumba: roomNo,
+                siku: days,
+                jumla: total,
+                malipo: paid,
+                njia,
+                hali: 'Yupo Ndani',
+                tarehe: new Date().toLocaleDateString('sw-TZ')
+            };
+            bookings.push(newBooking);
+
+            // 2. Mark Room as Occupied
+            const roomObj = rooms.find(r => r.namba === roomNo);
+            if (roomObj) roomObj.hali = 'Kimechukuliwa';
+
+            // 3. Record Payment
+            if (paid > 0) {
+                payments.push({
+                    id: Date.now(),
+                    tarehe: new Date().toLocaleDateString('sw-TZ'),
+                    jina,
+                    chumba: roomNo,
+                    kiasi: paid,
+                    njia
+                });
+            }
+
+            saveData();
+            document.getElementById('checkInForm').reset();
+            alert('Mteja ' + jina + ' amesajiliwa kikamilifu katika Chumba #' + roomNo + '!');
+            switchTab('dashboard');
+        }
+
+        function handleCheckOut(bookingId) {
+            const b = bookings.find(item => item.id === bookingId);
+            if (!b) return;
+
+            if (confirm('Thibitisha kumfanyia Check-Out mteja: ' + b.jina + ' (Chumba #' + b.chumba + ')?')) {
+                b.hali = 'Ametoka (Checked-Out)';
+                const roomObj = rooms.find(r => r.namba === b.chumba);
+                if (roomObj) roomObj.hali = 'Wazi';
+                saveData();
+                alert('Mteja amefanya Check-Out! Chumba #' + b.chumba + ' sasa kiko Wazi.');
+            }
+        }
+
+        // Automatic Download functions directly in browser
+        function downloadAppPy() {
+            fetch('app.py')
+                .then(r => r.text())
+                .then(content => {
+                    const blob = new Blob([content], { type: 'text/x-python' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'app.py';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(() => alert('Faili la app.py lipo kwenye saraka ya mfumo wako.'));
+        }
+
+        function downloadRequirements() {
+            const content = 'streamlit>=1.35.0\npandas>=2.0.0\n';
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'requirements.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Initialize on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('currentDate').textContent = 'Tarehe: ' + new Date().toLocaleDateString('sw-TZ');
+            renderAll();
+        });
+    </script>
+</body>
+</html>
